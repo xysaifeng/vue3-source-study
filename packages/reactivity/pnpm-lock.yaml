@@ -1,0 +1,7 @@
+lockfileVersion: 5.4
+
+specifiers:
+  '@vue/shared': workspace:^1.0.0
+
+dependencies:
+  '@vue/shared': link:../shared
