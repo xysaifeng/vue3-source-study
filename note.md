@@ -12,3 +12,5 @@
 - 若想要在 reactivity 模块中依赖 shared 模块，则在 reactivity 中安装 shared 模块，使用命令`pnpm install @vue/shared@workspace --filter @vue/reactivity`,表示把@vue/shared 模块安装到@vue/reactivity 中，@workspace 表示安装的是自己本地的包不是线上的包，--filter 表示过滤
 
 ### 3.如何打包呢？需要一个允许脚本,则新增一个目录 scripts
+
+### 4.在 ts 中使用 code runner 运行代码需要全局安装：`sudo npm i ts-node -g `,然后可以选中代码运行查看结果 - 2022-08-10 11:50

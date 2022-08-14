@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  使用自己的reactivity
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    // 在渲染的时候 要避免副作用函数产生遗留
+    const { effect, reactive } = VueReactivity
+
+    const state = reactive({
+      name: 'tom',
+      age: 12,
+      flag: true
+    })
+
+    let waiting = false
+    const runner = effect(() => {
+      console.log('r'); // 如果不处理，即使是vue也会会打印4次
+      app.innerHTML = state.age
+    }, {
+      scheduler() { // 现在没有参数了,📢：scheduler名字不能写错
+        if (!waiting) {
+          waiting = true
+          // 基本的批处理更新
+          Promise.resolve().then(() => {
+            runner()
+            waiting = false
+          })
+        }
+      }
+    })
+
+    setTimeout(() => {
+      // 没次数据改变，如果提供了scheduler，则调用scheduler而不会执行effect
+      state.age++
+      state.age++
+      state.age++
+    }, 2000);
+
+
+
+  </script>
+
+</body>
+
+</html>

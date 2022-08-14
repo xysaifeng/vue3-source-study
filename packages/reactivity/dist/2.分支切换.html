@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    // 在渲染的时候 要避免副作用函数产生遗留
+    const { effect, reactive } = VueReactivity
+
+    const state = reactive({
+      name: 'tom',
+      age: 12,
+      flag: true
+    })
+
+    effect(() => {
+      console.log('render');
+      app.innerHTML = state.flag ? state.name : state.age
+    })
+
+    setTimeout(() => {
+      state.flag = false
+      setTimeout(() => {
+        console.log('修改name，原则上不更新');
+        state.name = 'jack'
+      }, 1000);
+    }, 2000);
+
+
+
+  </script>
+
+</body>
+
+</html>
