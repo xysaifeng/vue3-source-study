@@ -70,6 +70,9 @@ var VueReactivity = (() => {
     if (!depsMap)
       return;
     let effects = depsMap.get(key);
+    triggerEffects(effects);
+  }
+  function triggerEffects(effects) {
     if (effects) {
       effects = new Set(effects);
       effects.forEach((effect2) => {
@@ -93,11 +96,14 @@ var VueReactivity = (() => {
       if (!deps) {
         depsMap.set(key, deps = /* @__PURE__ */ new Set());
       }
-      let shouldTrack = !deps.has(activeEffect);
-      if (shouldTrack) {
-        deps.add(activeEffect);
-        activeEffect.deps.push(deps);
-      }
+      trackEffects(deps);
+    }
+  }
+  function trackEffects(deps) {
+    let shouldTrack = !deps.has(activeEffect);
+    if (shouldTrack) {
+      deps.add(activeEffect);
+      activeEffect.deps.push(deps);
     }
   }
   function effect(fn, options = {}) {
@@ -176,13 +182,16 @@ var VueReactivity = (() => {
       this.setter = setter;
       this._dirty = true;
       this.effect = new ReactiveEffect(getter, () => {
-        console.log(this._dirty, "--------sss");
         if (!this._dirty) {
           this._dirty = true;
+          triggerEffects(this.deps);
         }
       });
     }
     get value() {
+      if (activeEffect) {
+        trackEffects(this.deps || (this.deps = /* @__PURE__ */ new Set()));
+      }
       if (this._dirty) {
         this._dirty = false;
         this._value = this.effect.run();
@@ -190,7 +199,6 @@ var VueReactivity = (() => {
       return this._value;
     }
     set value(newValues) {
-      console.log("newValues: ", newValues);
       this.setter(newValues);
     }
   };

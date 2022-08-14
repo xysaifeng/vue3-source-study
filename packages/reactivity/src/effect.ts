@@ -72,6 +72,10 @@ export function trigger(target, key, value) {
   if (!depsMap) return // 说明属性没有依赖任何effect
   let effects = depsMap.get(key)
   // 在执行这个effects之前，先对effects做分离，使得要执行的和要删的不是同一个effect
+  triggerEffects(effects)
+}
+
+export function triggerEffects(effects) {
   if (effects) {
     effects = new Set(effects)
     effects.forEach(effect => {
@@ -100,16 +104,20 @@ export function track(target, key) {
       // 统一个属性可以在同一个effect多次使用，所以要去重
       depsMap.set(key, (deps = new Set))
     }
-    let shouldTrack = !deps.has(activeEffect)
-    if (shouldTrack) {
-      deps.add(activeEffect)
-      // activeEffect.deps的作用就是让effect记录用到了哪些属性
-      activeEffect.deps.push(deps)
-    }
+    trackEffects(deps)
   }
   // console.log(activeEffect, targetMap);
   // 让属性记录用到的effect是谁，但是也需要知道那个effect对应了哪些属性，
   // 因为后面有清理操作（清理effect要清理对应的属性）
+}
+
+export function trackEffects(deps) {
+  let shouldTrack = !deps.has(activeEffect)
+  if (shouldTrack) {
+    deps.add(activeEffect)
+    // activeEffect.deps的作用就是让effect记录用到了哪些属性
+    activeEffect.deps.push(deps)
+  }
 }
 
 export function effect(fn, options = {} as any) {
