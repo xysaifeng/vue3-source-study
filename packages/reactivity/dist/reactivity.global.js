@@ -107,13 +107,22 @@ var VueReactivity = (() => {
     return runner;
   }
 
+  // packages/shared/src/index.ts
+  var isObject = (value) => {
+    return typeof value === "object" && value !== null;
+  };
+
   // packages/reactivity/src/baseHandler.ts
   var baseHandler = {
     get(target, key, receiver) {
       if (key === "__v_isReactive" /* IS_REACTIVE */)
         return true;
       track(target, key);
-      return Reflect.get(target, key, receiver);
+      const res = Reflect.get(target, key, receiver);
+      if (isObject(res)) {
+        return reactive(res);
+      }
+      return res;
     },
     set(target, key, value, receiver) {
       let oldValue = target[key];
@@ -123,11 +132,6 @@ var VueReactivity = (() => {
         return result;
       }
     }
-  };
-
-  // packages/shared/src/index.ts
-  var isObject = (value) => {
-    return typeof value === "object" && value !== null;
   };
 
   // packages/reactivity/src/reactive.ts

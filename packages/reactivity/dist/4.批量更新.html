@@ -10,7 +10,7 @@
 
 <body>
   <div id="app"></div>
-  使用自己的reactivity
+  <!-- 使用自己的reactivity -->
   <script src="./reactivity.global.js"></script>
   <!-- 使用官方的reactivity -->
   <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
@@ -23,13 +23,17 @@
     const state = reactive({
       name: 'tom',
       age: 12,
-      flag: true
+      flag: true,
+      num: {
+        n: 100
+      }
     })
 
     let waiting = false
     const runner = effect(() => {
-      console.log('r'); // 如果不处理，即使是vue也会会打印4次
-      app.innerHTML = state.age
+      // console.log('r'); // 如果不处理，即使是vue也会会打印4次
+      // app.innerHTML = state.age
+      app.innerHTML = state.num.n
     }, {
       scheduler() { // 现在没有参数了,📢：scheduler名字不能写错
         if (!waiting) {
@@ -45,9 +49,11 @@
 
     setTimeout(() => {
       // 没次数据改变，如果提供了scheduler，则调用scheduler而不会执行effect
-      state.age++
-      state.age++
-      state.age++
+      // state.age++
+      // state.age++
+      // state.age++
+
+      state.num.n = 200
     }, 2000);
 
 

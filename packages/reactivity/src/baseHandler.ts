@@ -1,8 +1,6 @@
-
-
-
-
+import { isObject } from './../../shared/src/index';
 import { track, trigger } from "./effect";
+import { reactive } from './reactive';
 
 // 2.一个对象代理过了就不要再代理了
 // 第一次传入obj => proxy
@@ -22,8 +20,13 @@ export const baseHandler = {
     // track(key, activeEffect)
     // 也就是说，某个对象的某个属性它收集的effect是谁
     track(target, key)
+    const res = Reflect.get(target, key, receiver)
+    // 如果属性对应的还是对象，继续代理
+    if (isObject(res)) {
+      return reactive(res)
+    }
 
-    return Reflect.get(target, key, receiver)
+    return res
   },
   set(target, key, value, receiver) {
     // console.log('set', key);

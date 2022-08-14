@@ -77,6 +77,7 @@ export function trigger(target, key, value) {
     effects.forEach(effect => {
       if (effect !== activeEffect) { // 保证要执行的effect不是当前的effect
         if (effect.scheduler) {
+          // 提供一个调度函数，数据一变，用户自己实现逻辑
           effect.scheduler()
         } else {
           effect.run() // 数据变化从新执行effect
