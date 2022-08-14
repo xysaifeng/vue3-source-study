@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const { effect, reactive, computed } = VueReactivity
+
+    const state = reactive({
+      firtName: 'tom',
+      lastName: 'go',
+    })
+
+
+    // const fullName = computed(() => {
+    //   console.log('get .');
+    //   return state.firtName + state.lastName
+    // })
+    const fullName = computed({
+      get() {
+        console.log('get--');
+        return state.firtName + state.lastName
+      },
+      set(val) {
+        console.log(' set val: ', val);
+        state.firtName = val
+      }
+    })
+    fullName.value = 999
+    effect(() => {
+      app.innerHTML = fullName.value
+    })
+
+    setTimeout(() => {
+      // state.lastName = 'ok'
+      fullName.value = 'xxx'
+    }, 1000);
+
+    // console.log(fullName.value);
+    // console.log(fullName.value);
+    // console.log(fullName.value);
+    // console.log(fullName.value);
+    // 计算属性就是一个effect函数，当取值的时候，会访问firstName，
+    // lastName的值，会让firstName，lastName来收集当前的computed effect
+    // 计算属性也可以收集effect
+
+
+
+
+
+
+
+  </script>
+
+</body>
+
+</html>

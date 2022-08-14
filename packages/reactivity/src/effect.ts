@@ -26,7 +26,7 @@ export class ReactiveEffect {
   // effect中用了哪些属性，后续清理的时候使用，就是说effect清理掉的时候让属性忘记自己记录的effect
   public deps = [] // effect存储属性
 
-  constructor(public fn, public scheduler) { // public fn : 会把fn放到this上面
+  constructor(public fn, public scheduler?) { // public fn : 会把fn放到this上面
   }
   run() {
     // 如果是非激活的，不需要进行依赖收集

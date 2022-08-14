@@ -20,6 +20,7 @@ var VueReactivity = (() => {
   // packages/reactivity/src/index.ts
   var src_exports = {};
   __export(src_exports, {
+    computed: () => computed,
     effect: () => effect,
     reactive: () => reactive
   });
@@ -111,6 +112,9 @@ var VueReactivity = (() => {
   var isObject = (value) => {
     return typeof value === "object" && value !== null;
   };
+  var isFunction = (value) => {
+    return typeof value === "function";
+  };
 
   // packages/reactivity/src/baseHandler.ts
   var baseHandler = {
@@ -149,6 +153,47 @@ var VueReactivity = (() => {
     reactiveMap.set(target, proxy);
     return proxy;
   }
+
+  // packages/reactivity/src/computed.ts
+  function computed(getterOrOptions) {
+    const isGetter = isFunction(getterOrOptions);
+    let getter;
+    let setter;
+    const fn = () => {
+      console.warn("computed  is readonly");
+    };
+    if (isGetter) {
+      getter = getterOrOptions;
+      setter = fn;
+    } else {
+      getter = getterOrOptions.get;
+      setter = getterOrOptions.set || fn;
+    }
+    return new ComputedRefImpl(getter, setter);
+  }
+  var ComputedRefImpl = class {
+    constructor(getter, setter) {
+      this.setter = setter;
+      this._dirty = true;
+      this.effect = new ReactiveEffect(getter, () => {
+        console.log(this._dirty, "--------sss");
+        if (!this._dirty) {
+          this._dirty = true;
+        }
+      });
+    }
+    get value() {
+      if (this._dirty) {
+        this._dirty = false;
+        this._value = this.effect.run();
+      }
+      return this._value;
+    }
+    set value(newValues) {
+      console.log("newValues: ", newValues);
+      this.setter(newValues);
+    }
+  };
   return __toCommonJS(src_exports);
 })();
 //# sourceMappingURL=reactivity.global.js.map
