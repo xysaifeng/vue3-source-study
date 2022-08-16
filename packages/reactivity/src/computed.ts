@@ -55,6 +55,7 @@ class ComputedRefImpl {
       this._value = this.effect.run()
 
     }
+
     return this._value
   }
   set value(newValues) {

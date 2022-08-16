@@ -18,7 +18,6 @@
 
   <script>
     const { effect, reactive, computed } = VueReactivity
-
     const state = reactive({
       firtName: 'tom',
       lastName: 'go',
@@ -40,7 +39,7 @@
       }
     })
     fullName.value = 999
-    effect(() => {
+    effect(function init() {
       app.innerHTML = fullName.value
     })
 

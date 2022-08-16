@@ -6,8 +6,6 @@ import { isObject } from "@vue/shared";
 const reactiveMap = new WeakMap(); // key必须是对象，弱引用
 // v8垃圾回收机制  标记📌删除  引用计数
 
-
-
 export function reactive(target) {
   if (!isObject(target)) return target
 

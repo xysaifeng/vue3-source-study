@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const { effect, reactive, computed, watch } = VueReactivity
+    // const { effect, reactive, computed, watch } = Vue
+
+    const state = reactive({
+      name: 'tom',
+      age: 12,
+      address: {
+        no: 123
+      }
+    })
+
+    // 数据变化了会重新执行watch的回调，数据仍然是响应式数据 
+
+    // 1.watch如果监测的是一个对象，对象是无法拿到新值和旧值的，vue2也是一样
+    // 2.vue3watch监控的是一个对象的时候，默认会深度监控
+    // watch(state, (newValue, oldValue) => {
+    //   console.log('newValue, oldValue: ', newValue, oldValue, newValue === oldValue);
+    // })
+
+    // 监控某个属性（实际是监控某个常量），会报警告，回调不会触发
+    // watch(state.age, (newValue, oldValue) => {
+    //   console.log('newValue, oldValue: ', newValue, oldValue, newValue === oldValue);
+    // })
+
+    // ok 3.如果监控的是某个属性，需要写成函数的格式
+    // watch(() => state.age, (newValue, oldValue) => {
+    //   console.log('newValue, oldValue: ', newValue, oldValue, newValue === oldValue);
+    // })
+
+
+    // 实现1.监控响应式对象
+    watch(state, (newValue, oldValue) => {
+      console.log('newValue, oldValue: ', newValue, oldValue, newValue === oldValue);
+    })
+
+
+    setTimeout(() => {
+      state.age++
+      // state.address.no++ // 当watch监控的是整个state时候会触发watch的回调
+    }, 1000);
+
+
+
+  </script>
+
+</body>
+
+</html>

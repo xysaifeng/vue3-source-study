@@ -22,7 +22,8 @@ var VueReactivity = (() => {
   __export(src_exports, {
     computed: () => computed,
     effect: () => effect,
-    reactive: () => reactive
+    reactive: () => reactive,
+    watch: () => watch
   });
 
   // packages/reactivity/src/effect.ts
@@ -123,6 +124,9 @@ var VueReactivity = (() => {
   };
 
   // packages/reactivity/src/baseHandler.ts
+  function isReactive(value) {
+    return value && value["__v_isReactive" /* IS_REACTIVE */];
+  }
   var baseHandler = {
     get(target, key, receiver) {
       if (key === "__v_isReactive" /* IS_REACTIVE */)
@@ -202,6 +206,13 @@ var VueReactivity = (() => {
       this.setter(newValues);
     }
   };
+
+  // packages/reactivity/src/watch.ts
+  function watch(scource, cb) {
+    if (isReactive(scource)) {
+      console.log("\u54CD\u4E00\u58F0\u5BF9\u8C61");
+    }
+  }
   return __toCommonJS(src_exports);
 })();
 //# sourceMappingURL=reactivity.global.js.map

@@ -9,6 +9,10 @@ export const enum ReactiveFlag {
   IS_REACTIVE = '__v_isReactive'
 }
 
+export function isReactive(value) {
+  return value && value[ReactiveFlag.IS_REACTIVE]
+}
+
 export const baseHandler = {
   get(target, key, receiver) {
     // console.log('get', key);
