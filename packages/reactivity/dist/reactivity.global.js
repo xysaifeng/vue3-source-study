@@ -208,10 +208,33 @@ var VueReactivity = (() => {
   };
 
   // packages/reactivity/src/watch.ts
+  function traversal(value, set = /* @__PURE__ */ new Set()) {
+    if (!isObject(value))
+      return value;
+    if (set.has(value))
+      return value;
+    set.add(value);
+    for (var key in value) {
+      traversal(value[key], set);
+    }
+    return value;
+  }
   function watch(scource, cb) {
+    let get;
+    let oldValue;
+    let newValue;
     if (isReactive(scource)) {
       console.log("\u54CD\u4E00\u58F0\u5BF9\u8C61");
+      get = () => traversal(scource);
+    } else if (isFunction(scource)) {
+      get = scource;
     }
+    const job = () => {
+      newValue = effect2.run();
+      cb(newValue, oldValue);
+    };
+    let effect2 = new ReactiveEffect(get, job);
+    oldValue = effect2.run();
   }
   return __toCommonJS(src_exports);
 })();
