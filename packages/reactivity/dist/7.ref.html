@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const { effect, reactive, computed, watch, ref } = VueReactivity
+    // const { effect, reactive, computed, watch, ref } = Vue
+
+    // ref其实做了一个类型包装，将一个普通值包装成了响应式对象
+    // 基于Object.defineProperty
+
+    const state = reactive({
+      name: 'tom',
+      age: 12,
+    })
+
+    // const flag = ref({ a: 1 }) // 对象 实际上是依赖reactive
+    const flag = ref(false) // 原始值
+    // console.log('flag: ', flag);
+
+    effect(() => {
+      // app.innerHTML = flag.value ? state.name : state.age // 取value属性的时候，可以收集effect
+      // app.innerHTML = flag.value.a
+      app.innerHTML = flag.value
+    })
+
+    setTimeout(() => {
+      // flag.value = true // 改value的时候可以触发effect重新执行
+      // flag.value.a = 2
+      flag.value = true
+    }, 2000);
+
+  </script>
+
+</body>
+
+</html>
