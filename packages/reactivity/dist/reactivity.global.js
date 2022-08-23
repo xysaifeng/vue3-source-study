@@ -22,8 +22,11 @@ var VueReactivity = (() => {
   __export(src_exports, {
     computed: () => computed,
     effect: () => effect,
+    proxyRefs: () => proxyRefs,
     reactive: () => reactive,
     ref: () => ref,
+    toRef: () => toRef,
+    toRefs: () => toRefs,
     watch: () => watch
   });
 
@@ -186,6 +189,7 @@ var VueReactivity = (() => {
     constructor(getter, setter) {
       this.setter = setter;
       this._dirty = true;
+      this.__v_isRef = true;
       this.effect = new ReactiveEffect(getter, () => {
         if (!this._dirty) {
           this._dirty = true;
@@ -249,12 +253,53 @@ var VueReactivity = (() => {
   function ref(value) {
     return new RefImpl(value);
   }
+  var ObjectRefImpl = class {
+    constructor(object, key) {
+      this.object = object;
+      this.key = key;
+      this.__v_isRef = true;
+    }
+    get value() {
+      return this.object[this.key];
+    }
+    set value(newValue) {
+      this.object[this.key] = newValue;
+    }
+  };
+  function toRef(object, key) {
+    return new ObjectRefImpl(object, key);
+  }
+  function proxyRefs(object) {
+    return new Proxy(object, {
+      get(target, key, receiver) {
+        const r = Reflect.get(target, key, receiver);
+        console.log("r: ", r);
+        return r.__v_isRef ? r.value : r;
+      },
+      set(target, key, value, receiver) {
+        if (target[key].__v_isRef) {
+          target[key].value = value;
+          return true;
+        }
+        return Reflect.set(target, key, value, receiver);
+      }
+    });
+  }
+  function toRefs(object) {
+    let res = {};
+    for (let key in object) {
+      res[key] = toRef(object, key);
+    }
+    console.log(res);
+    return res;
+  }
   function toReactive(value) {
     return isObject(value) ? reactive(value) : value;
   }
   var RefImpl = class {
     constructor(rawValue) {
       this.rawValue = rawValue;
+      this.__v_isRef = true;
       this._value = toReactive(rawValue);
     }
     get value() {

@@ -28,6 +28,7 @@ class ComputedRefImpl {
   private _dirty = true
   public effect
   public deps // 给每个计算属性专门收集effect用的
+  private __v_isRef = true;
   constructor(getter, public setter) {
     // 拿到effect实例，稍后可以run,让计算属性拥有依赖收集的能力
     // 这个effect默认不执行

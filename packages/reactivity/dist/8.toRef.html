@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const { effect, reactive, computed, watch, ref, toRef, toRefs, proxyRefs } = VueReactivity
+    // const { effect, reactive, computed, watch, ref, toRefs, toRef, proxyRefs } = Vue
+
+    const state = reactive({
+      name: 'tom',
+      age: 12,
+    })
+
+    let { name, age } = toRefs(state) // 转多个
+
+    // let my = {
+    //   name, age
+    // }
+    let my2 = proxyRefs({
+      name, age
+    })
+    console.log(my2, '===my2');
+
+    // let name = toRef(state, 'name') // 转单个
+    // let age = toRef(state, 'age')
+    // 原理是什么？
+    // 其实就是
+    // name.value =state.name
+    // age.value =state.age
+    effect(() => {
+      // app.innerHTML = state.name + state.age
+      // app.innerHTML = name.value + age.value
+
+      // app.innerHTML = my.name.value + my.age.value // ok
+      app.innerHTML = my2.name + my2.age // ok
+    })
+
+    setTimeout(() => {
+      name.value = 'jack-'
+    }, 2000);
+
+
+    // 总结
+    // computed watch都是基于effect
+    // computed中是具备缓存的dirty,依赖的值变化了会执行effect,此时更改dirty属性，
+    // 计算属性还会收集依赖，watch就是数据变化了触发内部的scheduler
+    // computed也是ref,可以用在模板上，但是watch不行，只能用在业务逻辑中 onCleanup
+
+    // watch内部可以实现异步调用回调，异步调用scheduler
+
+  </script>
+
+</body>
+
+</html>
