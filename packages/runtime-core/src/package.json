@@ -1,12 +1,11 @@
 {
-  "name": "@vue/runtime-dom",
+  "name": "@vue/runtime-core",
   "version": "1.0.0",
-  "description": "vue runtime-dom module",
-  "unpkg": "dist/runtime-dom.global.js",
-  "main": "dist/runtime-dom.cjs.js",
-  "module": "dist/runtime-dom.esm-bundler.js",
+  "description": "vue runtime-core module",
+  "main": "dist/runtime-core.cjs.js",
+  "module": "dist/runtime-core.esm-bundler.js",
   "buildOptions": {
-    "name": "VueRuntimeDom"
+    "name": "VueRuntimeCore"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
