@@ -163,9 +163,13 @@ var VueRuntimeDom = (() => {
   var isArray = Array.isArray;
 
   // packages/runtime-core/src/createVNode.ts
+  function isVNode(val) {
+    return !!val.__v_isVNode;
+  }
   function createVNode(type, props = null, children = null) {
     let shapFlag = isString(type) ? ShapFlags.ELEMENT : 0;
     const vnode = {
+      __v_isVNode: true,
       type,
       props,
       children,
@@ -183,7 +187,6 @@ var VueRuntimeDom = (() => {
       }
       vnode.shapFlag |= temp;
     }
-    console.log(vnode.shapFlag & ShapFlags.FUNCTIONAL_COMPONENT, "===v");
     return vnode;
   }
   var ShapFlags = /* @__PURE__ */ ((ShapFlags2) => {
@@ -202,7 +205,25 @@ var VueRuntimeDom = (() => {
   })(ShapFlags || {});
 
   // packages/runtime-core/src/h.ts
-  function h() {
+  function h(type, propsOrChildren, children) {
+    const l = arguments.length;
+    if (l === 2) {
+      if (isObject(propsOrChildren) && !isArray(propsOrChildren)) {
+        if (isVNode(propsOrChildren)) {
+          return createVNode(type, null, [propsOrChildren]);
+        }
+        return createVNode(type, propsOrChildren);
+      } else {
+        return createVNode(type, null, propsOrChildren);
+      }
+    } else {
+      if (l === 3 && isVNode(children)) {
+        children = [children];
+      } else if (l > 3) {
+        children = Array.from(arguments).slice(2);
+      }
+      return createVNode(type, propsOrChildren, children);
+    }
   }
 
   // packages/reactivity/src/effect.ts

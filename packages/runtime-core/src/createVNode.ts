@@ -1,5 +1,8 @@
 import { isArray, isString } from "@vue/shared"
 
+export function isVNode(val) {
+  return !!val.__v_isVNode
+}
 
 export function createVNode(type, props = null, children = null) {
   // 在这里就要创造虚拟节点了
@@ -10,6 +13,7 @@ export function createVNode(type, props = null, children = null) {
 
   // 将当前的虚拟节点和自己儿子的虚拟节点映射起来 涉及到问题是权限组合 位运算
   const vnode = { // vnode要对应真实的节点
+    __v_isVNode: true, // 标识当前对象是虚拟节点
     type,
     props,
     children,
@@ -32,7 +36,7 @@ export function createVNode(type, props = null, children = null) {
     vnode.shapFlag |= temp
   }
 
-  console.log(vnode.shapFlag & ShapFlags.FUNCTIONAL_COMPONENT, '===v');
+  // console.log(vnode.shapFlag & ShapFlags.FUNCTIONAL_COMPONENT, '===v');
   return vnode
 }
 
