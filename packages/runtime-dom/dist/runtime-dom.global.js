@@ -35,120 +35,18 @@ var VueRuntimeDom = (() => {
   var src_exports = {};
   __export(src_exports, {
     computed: () => computed,
+    createRenderer: () => createRenderer,
     createVNode: () => createVNode,
     effect: () => effect,
     h: () => h,
     proxyRefs: () => proxyRefs,
     reactive: () => reactive,
     ref: () => ref,
+    render: () => render,
     toRef: () => toRef,
     toRefs: () => toRefs,
     watch: () => watch
   });
-
-  // packages/runtime-dom/src/nodeOps.ts
-  var nodeOps = {
-    createElement(tagName) {
-      document.createElement(tagName);
-    },
-    createTextNode(text) {
-      document.createTextNode(text);
-    },
-    insert(el, container, anchor = null) {
-      container.insertBefore(el, anchor);
-    },
-    remove(child) {
-      const parent = child.parentNode;
-      if (parent) {
-        parent.removeChild(child);
-      }
-    },
-    querySelector(selectors) {
-      return document.querySelector(selectors);
-    },
-    parentNode(child) {
-      return child.parentNode;
-    },
-    nextSibling(child) {
-      return child.nextSibling;
-    },
-    setText(el, text) {
-      el.nodeValue = text;
-    },
-    setElementText(el, text) {
-      el.textContent = text;
-    }
-  };
-
-  // packages/runtime-dom/src/patch-prop/patchAttr.ts
-  function patchAttr(el, key, value) {
-    if (value) {
-      el.setAttribute(key, value);
-    } else {
-      el.removeAttribute(key);
-    }
-  }
-
-  // packages/runtime-dom/src/patch-prop/patchClass.ts
-  function patchClass(el, nextValue) {
-    if (nextValue == null) {
-      el.removeAttribute("class");
-    } else {
-      el.className = nextValue;
-    }
-  }
-
-  // packages/runtime-dom/src/patch-prop/patchEvent.ts
-  function createInvoker(prevValue) {
-    const invoker = (e) => invoker.value(e);
-    invoker.value = prevValue;
-    return invoker;
-  }
-  function patchEvent(el, eventName, nextValue) {
-    const invokers = el._vei || (el._vei = {});
-    const existingInvoker = invokers[eventName];
-    if (existingInvoker && nextValue) {
-      existingInvoker.value = nextValue;
-    } else {
-      const eName = eventName.slice(2).toLowerCase();
-      if (nextValue) {
-        const invoker = createInvoker(nextValue);
-        invokers[eventName] = invoker;
-        el.addEventListener(eName, invoker);
-      } else if (existingInvoker) {
-        el.removeEventListener(eName, existingInvoker);
-        invokers[eventName] = null;
-      }
-    }
-  }
-
-  // packages/runtime-dom/src/patch-prop/patchStyle.ts
-  function patchStyle(el, preValue, nextValue) {
-    const style = el.style;
-    for (let key in nextValue) {
-      style[key] = nextValue[key];
-    }
-    if (preValue) {
-      for (let key in preValue) {
-        if (nextValue[key] == null) {
-          style[key] = null;
-        }
-      }
-    }
-  }
-
-  // packages/runtime-dom/src/patchProp.ts
-  var patchProp = (el, key, preValue, nextValue) => {
-    if (key === "class") {
-      patchClass(el, nextValue);
-    } else if (key === "style") {
-      patchStyle(el, preValue, nextValue);
-    } else if (/on[^a-z]/.test(key)) {
-      patchEvent(el, key, nextValue);
-    } else {
-      patchAttr(el, key, nextValue);
-    }
-  };
 
   // packages/shared/src/index.ts
   var isObject = (value) => {
@@ -161,8 +59,12 @@ var VueRuntimeDom = (() => {
     return typeof value === "string";
   };
   var isArray = Array.isArray;
+  var isNumber = (value) => {
+    return typeof value === "number";
+  };
 
   // packages/runtime-core/src/createVNode.ts
+  var Text = Symbol("Text");
   function isVNode(val) {
     return !!val.__v_isVNode;
   }
@@ -224,6 +126,80 @@ var VueRuntimeDom = (() => {
       }
       return createVNode(type, propsOrChildren, children);
     }
+  }
+
+  // packages/runtime-core/src/renderer.ts
+  function createRenderer(options) {
+    let {
+      createElement: hostCreateElement,
+      createTextNode: hostCreateTextNode,
+      insert: hostInsert,
+      remove: hostRemove,
+      querySelector: hostQuerySelector,
+      parentNode: hostParentNode,
+      nextSibling: hostNextSibling,
+      setText: hostSetText,
+      setElementText: hostSetElementText,
+      patchProp: hostPatchProp
+    } = options;
+    function normalize(children, i) {
+      if (isString(children[i]) || isNumber(children[i])) {
+        children[i] = createVNode(Text, null, children[i]);
+      }
+      return children[i];
+    }
+    function mountChildren(children, container) {
+      for (let i = 0; i < children.length; i++) {
+        const child = normalize(children, i);
+        patch(null, child, container);
+      }
+    }
+    function mountElement(vnode, container) {
+      let { type, props, children, shapFlag } = vnode;
+      console.log("type: ", type);
+      let el = vnode.el = hostCreateElement(type);
+      if (shapFlag & 8 /* TEXT_CHILDREN */) {
+        hostSetElementText(el, children);
+      }
+      if (shapFlag & 16 /* ARRAY_CHILDREN */) {
+        mountChildren(children, el);
+      }
+      hostInsert(el, container);
+    }
+    function processText(n1, n2, container) {
+      if (n1 == null) {
+        hostInsert(n2.el = hostCreateTextNode(n2.children), container);
+      }
+    }
+    function processElement(n1, n2, container) {
+      if (n1 == null) {
+        mountElement(n2, container);
+      }
+    }
+    function patch(n1, n2, container) {
+      debugger;
+      const { type, shapFlag } = n2;
+      switch (type) {
+        case Text:
+          processText(n1, n2, container);
+          break;
+        default:
+          if (shapFlag & 1 /* ELEMENT */) {
+            processElement(n1, n2, container);
+          }
+          break;
+      }
+    }
+    const render2 = (vnode, container) => {
+      if (vnode == null) {
+      } else {
+        patch(container._vnode || null, vnode, container);
+      }
+      container._vnode = vnode;
+    };
+    return {
+      render: render2
+    };
   }
 
   // packages/reactivity/src/effect.ts
@@ -503,9 +479,116 @@ var VueRuntimeDom = (() => {
     }
   };
 
+  // packages/runtime-dom/src/nodeOps.ts
+  var nodeOps = {
+    createElement(tagName) {
+      return document.createElement(tagName);
+    },
+    createTextNode(text) {
+      return document.createTextNode(text);
+    },
+    insert(el, container, anchor = null) {
+      container.insertBefore(el, anchor);
+    },
+    remove(child) {
+      const parent = child.parentNode;
+      if (parent) {
+        parent.removeChild(child);
+      }
+    },
+    querySelector(selectors) {
+      return document.querySelector(selectors);
+    },
+    parentNode(child) {
+      return child.parentNode;
+    },
+    nextSibling(child) {
+      return child.nextSibling;
+    },
+    setText(el, text) {
+      el.nodeValue = text;
+    },
+    setElementText(el, text) {
+      el.textContent = text;
+    }
+  };
+
+  // packages/runtime-dom/src/patch-prop/patchAttr.ts
+  function patchAttr(el, key, value) {
+    if (value) {
+      el.setAttribute(key, value);
+    } else {
+      el.removeAttribute(key);
+    }
+  }
+
+  // packages/runtime-dom/src/patch-prop/patchClass.ts
+  function patchClass(el, nextValue) {
+    if (nextValue == null) {
+      el.removeAttribute("class");
+    } else {
+      el.className = nextValue;
+    }
+  }
+
+  // packages/runtime-dom/src/patch-prop/patchEvent.ts
+  function createInvoker(prevValue) {
+    const invoker = (e) => invoker.value(e);
+    invoker.value = prevValue;
+    return invoker;
+  }
+  function patchEvent(el, eventName, nextValue) {
+    const invokers = el._vei || (el._vei = {});
+    const existingInvoker = invokers[eventName];
+    if (existingInvoker && nextValue) {
+      existingInvoker.value = nextValue;
+    } else {
+      const eName = eventName.slice(2).toLowerCase();
+      if (nextValue) {
+        const invoker = createInvoker(nextValue);
+        invokers[eventName] = invoker;
+        el.addEventListener(eName, invoker);
+      } else if (existingInvoker) {
+        el.removeEventListener(eName, existingInvoker);
+        invokers[eventName] = null;
+      }
+    }
+  }
+
+  // packages/runtime-dom/src/patch-prop/patchStyle.ts
+  function patchStyle(el, preValue, nextValue) {
+    const style = el.style;
+    for (let key in nextValue) {
+      style[key] = nextValue[key];
+    }
+    if (preValue) {
+      for (let key in preValue) {
+        if (nextValue[key] == null) {
+          style[key] = null;
+        }
+      }
+    }
+  }
+
+  // packages/runtime-dom/src/patchProp.ts
+  var patchProp = (el, key, preValue, nextValue) => {
+    if (key === "class") {
+      patchClass(el, nextValue);
+    } else if (key === "style") {
+      patchStyle(el, preValue, nextValue);
+    } else if (/on[^a-z]/.test(key)) {
+      patchEvent(el, key, nextValue);
+    } else {
+      patchAttr(el, key, nextValue);
+    }
+  };
+
   // packages/runtime-dom/src/index.ts
   var renderOptions = __spreadValues({ patchProp }, nodeOps);
-  console.log("renderOptions: ", renderOptions);
+  function render(vnode, container) {
+    let { render: render2 } = createRenderer(renderOptions);
+    return render2(vnode, container);
+  }
   return __toCommonJS(src_exports);
 })();
 //# sourceMappingURL=runtime-dom.global.js.map

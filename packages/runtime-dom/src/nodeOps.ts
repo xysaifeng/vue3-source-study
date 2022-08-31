@@ -5,10 +5,10 @@
 
 export const nodeOps = {
   createElement(tagName) {
-    document.createElement(tagName)
+    return document.createElement(tagName)
   },
   createTextNode(text) {
-    document.createTextNode(text)
+    return document.createTextNode(text)
   },
   insert(el, container, anchor = null) {
     container.insertBefore(el, anchor)

@@ -10,6 +10,6 @@ export const isString = value => {
 }
 export const isArray = Array.isArray
 
-// export const isNumber = value => {
-//   return typeof value === 'string'
-// }
+export const isNumber = value => {
+  return typeof value === 'number'
+}

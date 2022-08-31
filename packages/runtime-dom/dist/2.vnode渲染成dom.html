@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+
+    // createRenderer 创建一个渲染器
+    // const { createRenderer, h, createVNode, render } = VueRuntimeDOM
+    const { createRenderer, h, createVNode, render } = VueRuntimeDom
+
+
+    // 比较前后两次创建的虚拟节点，更新差异的内容
+    // render(h('h1', h('span', 'heel')), app)
+    // setTimeout(() => {
+    //   render(h('h1', h('span', 'heel 22w')), app)
+    // }, 2000);
+    // setTimeout(() => {
+    //   render(null, app)
+    // }, 4000);
+
+
+    // 渲染文本
+    // render(h('h1', 'span'), app)
+    // 渲染元素对象
+    // render(h('h1', h('span', 'heel 22w')), app)
+    // render(h('h1', [123, 445]), app)
+    render(h('h1', [123, 456, h('span', 456)]), app)
+
+  </script>
+</body>
+
+</html>
