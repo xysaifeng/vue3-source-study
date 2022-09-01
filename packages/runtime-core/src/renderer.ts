@@ -28,6 +28,24 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
   }
 
+  function patchProps(oldProps, newProps, el) {
+    if (oldProps == null) oldProps = {}
+    if (newProps == null) newProps = {}
+
+    // 循环新的覆盖老的
+    for (let key in newProps) {
+      hostPatchProp(el, key, oldProps[key], newProps[key])
+    }
+
+    // 老的有新的没有要删除
+    for (let key in oldProps) {
+      if (newProps[key] == null) {
+        hostPatchProp(el, key, oldProps[key], null)
+      }
+
+    }
+  }
+
   function mountChildren(children, container) {
 
     for (let i = 0; i < children.length; i++) {
@@ -38,7 +56,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       // 经过处理后的child可能是文本了
       patch(null, child, container)
     }
-
   }
 
   function mountElement(vnode, container) {
@@ -49,6 +66,11 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     //  虚拟节点要标识它对应的真实元素，因为后续需要比对虚拟节点的差异更新页面，所以需要保留对应的真实节点
     let el = vnode.el = hostCreateElement(type)
 
+    if (props) { // {a: 1,b : 2} => {c: 3}
+      // 更新属性
+      patchProps(null, props, el)
+    }
+
     // children 不是数组就是文本
     if (shapFlag & ShapFlags.TEXT_CHILDREN) {
       hostSetElementText(el, children)
@@ -56,7 +78,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     if (shapFlag & ShapFlags.ARRAY_CHILDREN) {
       mountChildren(children, el)
     }
-
 
     hostInsert(el, container)
   }
@@ -84,7 +105,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     // } else {
     //   // n1有值 说明要走diff算法
     // }
-    debugger
     // n2要么是元素要么是文本
     const { type, shapFlag } = n2
     switch (type) {
@@ -97,7 +117,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         }
         break;
     }
-
   }
 
   const render = (vnode, container) => { // 需要将vnode渲染到container并且调用options中的api

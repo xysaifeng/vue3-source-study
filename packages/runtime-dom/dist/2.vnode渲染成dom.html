@@ -35,7 +35,7 @@
     // 渲染元素对象
     // render(h('h1', h('span', 'heel 22w')), app)
     // render(h('h1', [123, 445]), app)
-    render(h('h1', [123, 456, h('span', 456)]), app)
+    render(h('h1', { a: 1, b: 2, style: { color: 'red' }, onClick() { alert('click') } }, [123, 456, h('span', 456)]), app)
 
   </script>
 </body>

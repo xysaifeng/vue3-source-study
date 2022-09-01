@@ -148,6 +148,20 @@ var VueRuntimeDom = (() => {
       }
       return children[i];
     }
+    function patchProps(oldProps, newProps, el) {
+      if (oldProps == null)
+        oldProps = {};
+      if (newProps == null)
+        newProps = {};
+      for (let key in newProps) {
+        hostPatchProp(el, key, oldProps[key], newProps[key]);
+      }
+      for (let key in oldProps) {
+        if (newProps[key] == null) {
+          hostPatchProp(el, key, oldProps[key], null);
+        }
+      }
+    }
     function mountChildren(children, container) {
       for (let i = 0; i < children.length; i++) {
         const child = normalize(children, i);
@@ -158,6 +172,9 @@ var VueRuntimeDom = (() => {
       let { type, props, children, shapFlag } = vnode;
       console.log("type: ", type);
       let el = vnode.el = hostCreateElement(type);
+      if (props) {
+        patchProps(null, props, el);
+      }
       if (shapFlag & 8 /* TEXT_CHILDREN */) {
         hostSetElementText(el, children);
       }
@@ -177,7 +194,6 @@ var VueRuntimeDom = (() => {
       }
     }
     function patch(n1, n2, container) {
-      debugger;
       const { type, shapFlag } = n2;
       switch (type) {
         case Text:
