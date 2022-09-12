@@ -1,5 +1,5 @@
 import { isNumber, isString } from "@vue/shared";
-import { createVNode, isSameVNode, ShapeFlags, Text } from "./createVNode";
+import { createVNode, Fragment, isSameVNode, ShapeFlags, Text } from "./createVNode";
 import { getSequence } from "./sequence";
 
 
@@ -82,14 +82,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     hostInsert(el, container, anchor)
   }
 
-  function processText(n1, n2, container) {
-    if (n1 == null) {
-      // 创建一个文本节点并插入，因为可能有多个文本
-      // n2是一个文本的虚拟节点，把文本虚拟节点的内容创造一个文本出来，
-      // 并且做上标记，虚拟节点的el上要存上真实节点
-      hostInsert(n2.el = hostCreateTextNode(n2.children), container)
-    }
-  }
+
 
   function unmountChildren(children) {
     children.forEach(child => {
@@ -213,7 +206,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
           // 新的老的都有，可以记录下来当前对应的索引，稍后可以判断出哪些元素不需要移动
           // 用新的位置和 老的位置做一个关联
           seq[newIndex - s2] = i + 1 // 需要加1不然和本身位于0位置的有冲突
-
           patch(oldVNode, c2[newIndex], el) // 如果新老都有，则比较两个节点的差异，再比较他们的儿子
         }
       }
@@ -333,10 +325,38 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       patchElement(n1, n2,)
     }
   }
+  function processText(n1, n2, container) {
+    if (n1 == null) {
+      // 创建一个文本节点并插入，因为可能有多个文本
+      // n2是一个文本的虚拟节点，把文本虚拟节点的内容创造一个文本出来，
+      // 并且做上标记，虚拟节点的el上要存上真实节点
+      hostInsert(n2.el = hostCreateTextNode(n2.children), container)
+    } else {
+      // 更新文本不能用 patch 和 patchChildren
+      // 应该复用节点bing更新内容
+      const el = n2.el = n1.el
+      const newText = n2.children
+      if (newText !== n1.children) {
+        hostSetText(el, newText)
+      }
+    }
+  }
+  function processFragment(n1, n2, container) {
+    if (n1 == null) {
+      mountChildren(n2.children, container)
+    } else {
+      patchKeyChildren(n1.children, n2.children, container)
+    }
+  }
 
   function unmount(n1) {
+    if (n1.type === Fragment) { // Fragment删除所有子节点
+      return unmountChildren(n1.children)
+    }
     hostRemove(n1.el)
   }
+
+
 
   // n1前一个虚拟节点 n2当前的虚拟节点,将虚拟节点渲染为真实节点
   function patch(n1, n2, container, anchor = null) {
@@ -358,6 +378,9 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     switch (type) {
       case Text:
         processText(n1, n2, container)
+        break;
+      case Fragment:
+        processFragment(n1, n2, container)
         break;
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {

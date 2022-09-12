@@ -34,6 +34,8 @@ var VueRuntimeDom = (() => {
   // packages/runtime-dom/src/index.ts
   var src_exports = {};
   __export(src_exports, {
+    Fragment: () => Fragment,
+    Text: () => Text,
     computed: () => computed,
     createRenderer: () => createRenderer,
     createVNode: () => createVNode,
@@ -65,6 +67,7 @@ var VueRuntimeDom = (() => {
 
   // packages/runtime-core/src/createVNode.ts
   var Text = Symbol("Text");
+  var Fragment = Symbol("Fragment");
   function isVNode(val) {
     return !!val.__v_isVNode;
   }
@@ -174,7 +177,6 @@ var VueRuntimeDom = (() => {
     return result;
   }
   var arrInex = getSequence([2, 3, 1, 5, 6, 8, 7, 9, 4]);
-  console.log(arrInex);
 
   // packages/runtime-core/src/renderer.ts
   function createRenderer(options) {
@@ -229,11 +231,6 @@ var VueRuntimeDom = (() => {
         mountChildren(children, el);
       }
       hostInsert(el, container, anchor);
-    }
-    function processText(n1, n2, container) {
-      if (n1 == null) {
-        hostInsert(n2.el = hostCreateTextNode(n2.children), container);
-      }
     }
     function unmountChildren(children) {
       children.forEach((child) => {
@@ -363,7 +360,28 @@ var VueRuntimeDom = (() => {
         patchElement(n1, n2);
       }
     }
+    function processText(n1, n2, container) {
+      if (n1 == null) {
+        hostInsert(n2.el = hostCreateTextNode(n2.children), container);
+      } else {
+        const el = n2.el = n1.el;
+        const newText = n2.children;
+        if (newText !== n1.children) {
+          hostSetText(el, newText);
+        }
+      }
+    }
+    function processFragment(n1, n2, container) {
+      if (n1 == null) {
+        mountChildren(n2.children, container);
+      } else {
+        patchKeyChildren(n1.children, n2.children, container);
+      }
+    }
     function unmount(n1) {
+      if (n1.type === Fragment) {
+        return unmountChildren(n1.children);
+      }
       hostRemove(n1.el);
     }
     function patch(n1, n2, container, anchor = null) {
@@ -375,6 +393,9 @@ var VueRuntimeDom = (() => {
       switch (type) {
         case Text:
           processText(n1, n2, container);
+          break;
+        case Fragment:
+          processFragment(n1, n2, container);
           break;
         default:
           if (shapeFlag & 1 /* ELEMENT */) {

@@ -78,4 +78,4 @@ export function getSequence(arr) {
 // const arrInex = getSequence([1, 2, 3, 4, 5])
 // const arrInex = getSequence([2, 3, 7, 6, 8, 4, 9, 5]) // [ 0, 1, 5, 7, 6 ]
 const arrInex = getSequence([2, 3, 1, 5, 6, 8, 7, 9, 4]) // [ 0, 1, 3, 4, 6, 7 ] => [2,3,5,6,7,9]
-console.log(arrInex);
+// console.log(arrInex);

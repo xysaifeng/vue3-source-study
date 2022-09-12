@@ -1,7 +1,7 @@
 
 
 
-export { createVNode } from './createVNode'
+export { createVNode, Text, Fragment } from './createVNode'
 export { h } from './h'
 export { createRenderer } from './renderer'
 
