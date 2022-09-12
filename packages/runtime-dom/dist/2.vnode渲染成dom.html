@@ -35,7 +35,188 @@
     // 渲染元素对象
     // render(h('h1', h('span', 'heel 22w')), app)
     // render(h('h1', [123, 445]), app)
-    render(h('h1', { a: 1, b: 2, style: { color: 'red' }, onClick() { alert('click') } }, [123, 456, h('span', 456)]), app)
+    // render(h('h1', { a: 1, b: 2, style: { color: 'red' }, onClick() { alert('click') } }, [123, 456, h('span', 456)]), app)
+
+
+    // diff start
+    // 用户在操作dom节点的时候 ，很少将儿子变成父亲，父亲变成儿子的情况，因为如果要做完整的两棵树比对新能很差
+    // diff算法采用同级节点比对
+    // 父亲比较完成后，会递归比较子节点(全量比对)
+
+    // render(h('h1', h('span', 'heel 22w')), app)
+    // setTimeout(() => {
+    //   render(h('h2', h('span', 'heel ')), app)
+    // }, 2000);
+
+    // type，children相同，样式不同
+    // render(h('h1', { style: { color: 'red' } }, 'hello'), app)
+    // setTimeout(() => {
+    //   render(h('h1', { style: { color: 'yellow' } }, 'hello'), app)
+    // }, 2000);
+
+    // 渲染为null
+    // setTimeout(() => {
+    //   render(null, app)
+    // }, 4000);
+
+
+    // 比较儿子的6种情况
+    // 1） 文本（new）    数组(old)
+    // 2） 文本（new）    文本(old)
+    // 3） 文本（new）    空(old)
+    // render(h('h1', { style: { color: 'red' } }, ['hello', 'world']), app)
+    // render(h('h1', { style: { color: 'red' } }, 'world'), app)
+    // render(h('h1', { style: { color: 'red' } }), app)
+    // setTimeout(() => {
+    //   render(h('h1', { style: { color: 'pink' } }, 'hello'), app)
+    // }, 2000);
+
+
+
+    // 4） 空（new）    数组(old)
+    // render(h('h1', { style: { color: 'red' } }, ['1', 2]), app)
+    // setTimeout(() => {
+    //   render(h('h1', { style: { color: 'pink' } },), app)
+    // }, 2000);
+
+    // 5） 数组（new）| 空    文本(old) | 空
+    // render(h('h1', { style: { color: 'red' } }, 'xxx'), app)
+    // // render(h('h1', { style: { color: 'red' } },), app)
+    // setTimeout(() => {
+    //   // render(h('h1', { style: { color: 'pink' } }, [1, 2, 3]), app)
+    //   render(h('h1', { style: { color: 'pink' } },), app)
+    // }, 2000);
+
+    // 6） 数组（new）    数组(old)
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'a', style: { color: 'red' } }, 'hello'),
+    //   h('p', { key: 'b', style: { color: 'yellow' } }, 'world')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a', style: { color: 'pink' } }, 'hello1'),
+    //     h('p', { key: 'b', style: { color: 'red' } }, 'world')
+    //   ]), app)
+    // }, 2000); // ok
+
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'a', style: { color: 'red' } }, 'hello'),
+    //   h('p', { key: 'b', style: { color: 'yellow' } }, 'world')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a', style: { color: 'pink' } }, 'hello1'),
+    //     // h('p', { key: 'b', style: { color: 'red' } }, 'world')
+    //   ]), app)
+
+
+    // 从后追加 e f
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'a' }, '1'),
+    //   h('p', { key: 'b' }, '2'),
+    //   h('p', { key: 'c' }, '3'),
+    //   h('p', { key: 'd' }, '4')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a' }, '1'),
+    //     h('p', { key: 'b' }, '2'),
+    //     h('p', { key: 'c' }, '3'),
+    //     h('p', { key: 'd' }, '4'),
+    //     h('p', { key: 'e' }, '5'),
+    //     h('p', { key: 'f' }, '6')
+    //   ]), app)
+    // }, 2000);
+
+    // 从前追加 a b
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'c' }, '3'),
+    //   h('p', { key: 'd' }, '4'),
+    //   h('p', { key: 'e' }, '5'),
+    //   h('p', { key: 'f' }, '6')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a' }, '1'),
+    //     h('p', { key: 'b' }, '2'),
+    //     h('p', { key: 'c' }, '3'),
+    //     h('p', { key: 'd' }, '4'),
+    //     h('p', { key: 'e' }, '5'),
+    //     h('p', { key: 'f' }, '6')
+    //   ]), app)
+    // }, 2000);
+
+    // 从前删除 a b | 从后删除 e f
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'a' }, '1'),
+    //   h('p', { key: 'b' }, '2'),
+    //   h('p', { key: 'c' }, '3'),
+    //   h('p', { key: 'd' }, '4'),
+    //   h('p', { key: 'e' }, '5'),
+    //   h('p', { key: 'f' }, '6')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a' }, '1'),
+    //     h('p', { key: 'b' }, '2'),
+    //     h('p', { key: 'c' }, '3'),
+    //     h('p', { key: 'd' }, '4'),
+    //     // h('p', { key: 'e' }, '5'),
+    //     // h('p', { key: 'f' }, '6')
+    //   ]), app)
+    // }, 2000);
+
+
+    // 乱序
+    // render(h('div', { style: { color: 'red' } }, [
+    //   h('p', { key: 'a' }, 'a'),
+    //   h('p', { key: 'b' }, 'b'),
+
+    //   h('p', { key: 'c' }, 'c'),
+    //   h('p', { key: 'd' }, 'd'),
+    //   h('p', { key: 'e', style: { color: 'green' } }, 'e'),
+
+    //   h('p', { key: 'f' }, 'f'),
+    //   h('p', { key: 'g' }, 'g')
+    // ]), app)
+    // setTimeout(() => {
+    //   render(h('div', { style: { color: 'red' } }, [
+    //     h('p', { key: 'a' }, 'a'),
+    //     h('p', { key: 'b' }, 'b'),
+
+    //     h('p', { key: 'd' }, 'd'),
+    //     h('p', { key: 'e', style: { color: 'blue' } }, 'e'),
+    //     h('p', { key: 'q' }, 'q'),
+
+    //     h('p', { key: 'f' }, 'f'),
+    //     h('p', { key: 'g' }, 'g')
+    //   ]), app)
+    // }, 2000);
+
+
+    // 乱序
+    render(h('div', { style: { color: 'red' } }, [
+      h('p', { key: 'a' }, 'a'),
+      h('p', { key: 'b' }, 'b'),
+      h('p', { key: 'c' }, 'c'),
+      h('p', { key: 'd' }, 'd'),
+      h('p', { key: 'e', style: { color: 'green' } }, 'e'),
+      h('p', { key: 'q' }, 'q'),
+      h('p', { key: 'f' }, 'f'),
+      h('p', { key: 'g' }, 'g')
+    ]), app)
+    setTimeout(() => {
+      render(h('div', { style: { color: 'red' } }, [
+        h('p', { key: 'a' }, 'a'),
+        h('p', { key: 'b' }, 'b'),
+        h('p', { key: 'e' }, 'e'),
+        h('p', { key: 'c' }, 'c'),
+        h('p', { key: 'd' }, 'd'),
+        h('p', { key: 'h', style: { color: 'blue' } }, 'h'),
+        h('p', { key: 'f' }, 'f'),
+        h('p', { key: 'g' }, 'g')
+      ]), app)
+    }, 2000);
 
   </script>
 </body>

@@ -6,12 +6,16 @@ export function isVNode(val) {
   return !!val.__v_isVNode
 }
 
+export function isSameVNode(v1, v2) {
+  return v1.type === v2.type && v1.key === v2.key
+}
+
 export function createVNode(type, props = null, children = null) {
   // 在这里就要创造虚拟节点了
 
   // 需要知道当前虚拟节点是什么类型，儿子是什么类型
   // 后续可判断更多的虚拟节点类型
-  let shapFlag = isString(type) ? ShapFlags.ELEMENT : 0; // 标记出了自己是什么类型
+  let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0; // 标记出了自己是什么类型
 
   // 将当前的虚拟节点和自己儿子的虚拟节点映射起来 涉及到问题是权限组合 位运算
   const vnode = { // vnode要对应真实的节点
@@ -21,7 +25,7 @@ export function createVNode(type, props = null, children = null) {
     children,
     key: props && props.key, // 标识虚拟节点的唯一性，方便做diff算法用
     el: null, // 真实节点，当做了初始渲染后，就把虚拟节点对应的真实节点做一个映射
-    shapFlag
+    shapeFlag
     // 打个标记， 标记当前虚拟节点的儿子的类型是什么
   }
   // 渲染的时候有个特点 -- shapFlags：位运算的概念
@@ -30,21 +34,21 @@ export function createVNode(type, props = null, children = null) {
   if (children) {
     let temp = 0
     if (isArray(children)) { // children要么是数组要么文本，h中会处理
-      temp = ShapFlags.ARRAY_CHILDREN
+      temp = ShapeFlags.ARRAY_CHILDREN
     } else {
       children = String(children)
-      temp = ShapFlags.TEXT_CHILDREN
+      temp = ShapeFlags.TEXT_CHILDREN
     }
-    vnode.shapFlag |= temp
+    vnode.shapeFlag |= temp
   }
 
-  // console.log(vnode.shapFlag & ShapFlags.FUNCTIONAL_COMPONENT, '===v');
+  // console.log(vnode.shapeFlag & ShapeFlags.FUNCTIONAL_COMPONENT, '===v');
   return vnode
 }
 
 // vue3的形状标识
 // 通过组合可以描述虚拟节点的类型
-export const enum ShapFlags {
+export const enum ShapeFlags {
   ELEMENT = 1,
   FUNCTIONAL_COMPONENT = 1 << 1, // 2 = 1 * 2^1
   STATEFUL_COMPONENT = 1 << 2, // 4 = 1 * 2^2
@@ -55,7 +59,7 @@ export const enum ShapFlags {
   SUSPENSE = 1 << 7,
   COMPONENT_SHOULD_KEEP_ALIVE = 1 << 8,
   COMPONENT_KEEP_ALIVE = 1 << 9,
-  COMPONENT = ShapFlags.STATEFUL_COMPONENT | ShapFlags.FUNCTIONAL_COMPONENT,
+  COMPONENT = ShapeFlags.STATEFUL_COMPONENT | ShapeFlags.FUNCTIONAL_COMPONENT,
 }
 
 // | 或运算：只要有一个是1就是1

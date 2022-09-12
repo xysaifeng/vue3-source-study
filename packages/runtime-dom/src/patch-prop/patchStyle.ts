@@ -4,8 +4,10 @@ export function patchStyle(el, preValue, nextValue) { // 如何比较两个对�
   // 比较两个对象 需要同时遍历新的和老的对象
   // 新的有老的没有直接覆盖
   // 新的没有老的有，删除新的
-  const style = el.style
+  if (!preValue) preValue = {}
+  if (!nextValue) nextValue = {}
 
+  const style = el.style
   for (let key in nextValue) {
     style[key] = nextValue[key]
   }
