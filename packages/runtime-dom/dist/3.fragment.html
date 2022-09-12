@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // vue中必须要有一个根节点，在一个代码块儿中可以引入多个子节点
+
+    // const { h, Text, render, Fragment } = VueRuntimeDOM
+    const { h, Text, render, Fragment } = VueRuntimeDom
+    // Fragment的特点：儿子只能是数组
+
+    // render(h(Text, 'hello world'), app) // ok
+    // render([h(Text, 'hello world'), h(Text, 'hello world')], app) // err
+    // render(h(Fragment, { style: { color: 'red' } }, [h(Text, 'hello world1'), h(Text, 'hello world2')]), app) // OK
+
+    // setTimeout(() => {
+    //   // render(h(Fragment, [h(Text, 'hello world3')]), app) // OK
+    // }, 2000);
+    // setTimeout(() => {
+    //   render(null, app) // OK
+    // }, 2000);
+
+    // Text更新
+    render(h(Text, 123), app) // OK
+    setTimeout(() => {
+      render(h(Text, 1234), app) // OK
+    }, 2000);
+    setTimeout(() => {
+      // render(null, app) // OK
+    }, 2000);
+  </script>
+</body>
+
+</html>
