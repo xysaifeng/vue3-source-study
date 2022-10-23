@@ -1,3 +1,4 @@
+import { ReactiveEffect } from './../../reactivity/src/effect';
 import { isNumber, isString } from "@vue/shared";
 import { createComponentInstance, setupComponent } from "./component";
 import { createVNode, Fragment, isSameVNode, ShapeFlags, Text } from "./createVNode";
@@ -350,6 +351,58 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     }
   }
 
+  function setupRenderEffect(instance, container, anchor) {
+    // 1.先创建一个effect
+
+    // 1.1组件渲染函数、数据变化了都调这个函数
+    const componentUpdate = () => {
+      // 初次渲染
+      const { render, data } = instance;
+      if (!instance.isMounted) {
+        // 组件最终渲染的虚拟节点就是subTree,
+
+        // 这里调用render会做依赖收集，稍后数据变化了，会重新调用update方法
+        const subTree = render.call(data)
+        // 有了subTree,创造真实节点放到容器中
+        patch(null, subTree, container, anchor)
+        // 实例的subTree赋值，方便下次取值比对
+        instance.subTree = subTree
+        instance.isMounted = true
+      } else {
+        // 更新：比较两个subTree的区别，再做更新
+        const subTree = render.call(data)
+        patch(instance.subTree, subTree, container, anchor)
+        instance.subTree = subTree
+      }
+
+    }
+    // scheduler暂时不传
+    const effect = new ReactiveEffect(componentUpdate)
+
+    // 用户想强制跟新，调update方法
+    const update = instance.update = effect.run.bind(effect)
+    update()
+
+  }
+
+  function mountComponent(vnode, container, anchor) {
+    // 根据虚拟节点n2产生一个实例 new Component => 组件实例
+
+    // 1.组件挂载前需要产生一个组件的实例（就是一个对象），实例上包含了组件的状态、属性、对应的生命周期...
+    // 创建的实例放在虚拟节点上,类似 let el = vnode.el = document.createElement()
+    // 方便更新的时候拿到组件实例去做更新操作
+    const instance = vnode.component = createComponentInstance(vnode)
+    // 2.组件内部需要处理的比如：组件的插槽，处理组件的属性...，给组件实例赋值
+    // 这个地方主要处理属性和插槽
+
+    setupComponent(instance) // 给组件复制
+    // 3.给组件产生一个effect，这样组件数据变化更新后可以重新渲染,当数据变化了可以重新渲染
+    setupRenderEffect(instance, container, anchor)
+
+    // 组件的有点？-- 复用，逻辑拆分、方便维护，**vue组件级更新**
+
+  }
+
   function processComponent(n1, n2, container, anchor) {
     console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
     if (n1 == null) {
@@ -358,22 +411,6 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     } else {
       // 组件的更新 包括插槽的更新和属性的更新
     }
-  }
-
-  function mountComponent(vnode, container, anchor) {
-    // 根据虚拟节点n2产生一个实例
-
-    // 1.组件挂载前需要产生一个组件的实例，组件的状态、属性、对应的生命周期...
-    // 创建的实例放在虚拟节点上,
-    const instance = vnode.component = createComponentInstance(vnode)
-    // 2.组件内部需要处理的比如：组件的插槽，处理组件的属性...，给组件实例赋值
-    // 这个地方主要处理属性和插槽
-
-    setupComponent(instance)
-    // 3.给组件产生一个effect，这样组件数据变化更新后可以重新渲染
-
-    // 组件的有点？-- 复用，逻辑拆分、方便维护，vue组件级更新
-
   }
 
   function unmount(n1) {

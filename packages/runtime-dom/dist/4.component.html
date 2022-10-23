@@ -21,10 +21,16 @@
     // 外层叫_vnode 里层render返回的叫subTree
     const VueComponent = {
       data() {
-        return { name: 'tom' }
+        return { name: 'tom', age: 12 }
       },
       render() { // render函数返回虚拟节点，决定最终渲染结果
-        return h('button', { style: { color: 'red' } }, this.name)
+        return h('button', {
+          style: { color: 'red' }, onClick: () => {
+            // 更新属性
+            this.name = 'jerry'
+            console.log(this);
+          }
+        }, h('span', this.name))
       }
     }
 
