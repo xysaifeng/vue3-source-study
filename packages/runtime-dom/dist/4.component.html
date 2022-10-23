@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+
+    // const { h, Text, render, Fragment } = VueRuntimeDOM
+    const { h, Text, render, Fragment } = VueRuntimeDom
+
+    // 外层叫_vnode 里层render返回的叫subTree
+    const VueComponent = {
+      data() {
+        return { name: 'tom' }
+      },
+      render() { // render函数返回虚拟节点，决定最终渲染结果
+        return h('button', { style: { color: 'red' } }, this.name)
+      }
+    }
+
+    // console.log(h(VueComponent, { a: 1, key: 'as' }, 2));
+    console.log(h(VueComponent, { a: 1, key: 'as' }, { default: () => h('div', { class: 'c-slot' }, '儿子') }));
+
+    // 渲染组件思路
+    // 处理h函数，让h函数支持组件类型，渲染的时候，判断如果是组件类型，则调用它的render方法
+    render(h(VueComponent), app)
+
+
+  </script>
+</body>
+
+</html>

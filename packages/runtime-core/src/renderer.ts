@@ -1,4 +1,5 @@
 import { isNumber, isString } from "@vue/shared";
+import { createComponentInstance, setupComponent } from "./component";
 import { createVNode, Fragment, isSameVNode, ShapeFlags, Text } from "./createVNode";
 import { getSequence } from "./sequence";
 
@@ -349,14 +350,38 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     }
   }
 
+  function processComponent(n1, n2, container, anchor) {
+    console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
+    if (n1 == null) {
+      // 组件初始化: 考虑把data数据变成响应式的，然后调render方法，但是不能直接把data变成响应式的 要怎么和render建立关系
+      mountComponent(n2, container, anchor)
+    } else {
+      // 组件的更新 包括插槽的更新和属性的更新
+    }
+  }
+
+  function mountComponent(vnode, container, anchor) {
+    // 根据虚拟节点n2产生一个实例
+
+    // 1.组件挂载前需要产生一个组件的实例，组件的状态、属性、对应的生命周期...
+    // 创建的实例放在虚拟节点上,
+    const instance = vnode.component = createComponentInstance(vnode)
+    // 2.组件内部需要处理的比如：组件的插槽，处理组件的属性...，给组件实例赋值
+    // 这个地方主要处理属性和插槽
+
+    setupComponent(instance)
+    // 3.给组件产生一个effect，这样组件数据变化更新后可以重新渲染
+
+    // 组件的有点？-- 复用，逻辑拆分、方便维护，vue组件级更新
+
+  }
+
   function unmount(n1) {
     if (n1.type === Fragment) { // Fragment删除所有子节点
       return unmountChildren(n1.children)
     }
     hostRemove(n1.el)
   }
-
-
 
   // n1前一个虚拟节点 n2当前的虚拟节点,将虚拟节点渲染为真实节点
   function patch(n1, n2, container, anchor = null) {
@@ -385,6 +410,8 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor)
+        } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+          processComponent(n1, n2, container, anchor)
         }
         break;
     }

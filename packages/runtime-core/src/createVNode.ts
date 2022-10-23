@@ -1,4 +1,4 @@
-import { isArray, isString } from "@vue/shared"
+import { isArray, isObject, isString } from "@vue/shared"
 
 export const Text = Symbol('Text')
 export const Fragment = Symbol('Fragment')
@@ -16,7 +16,8 @@ export function createVNode(type, props = null, children = null) {
 
   // 需要知道当前虚拟节点是什么类型，儿子是什么类型
   // 后续可判断更多的虚拟节点类型
-  let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0; // 标记出了自己是什么类型
+  // type新增了对象类型(202209130001) 
+  let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : isObject(type) ? ShapeFlags.STATEFUL_COMPONENT : 0; // 标记出了自己是什么类型
 
   // 将当前的虚拟节点和自己儿子的虚拟节点映射起来 涉及到问题是权限组合 位运算
   const vnode = { // vnode要对应真实的节点

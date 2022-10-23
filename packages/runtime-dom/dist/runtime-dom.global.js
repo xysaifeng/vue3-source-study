@@ -75,7 +75,7 @@ var VueRuntimeDom = (() => {
     return v1.type === v2.type && v1.key === v2.key;
   }
   function createVNode(type, props = null, children = null) {
-    let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0;
+    let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : isObject(type) ? ShapeFlags.STATEFUL_COMPONENT : 0;
     const vnode = {
       __v_isVNode: true,
       type,
@@ -132,6 +132,19 @@ var VueRuntimeDom = (() => {
       }
       return createVNode(type, propsOrChildren, children);
     }
+  }
+
+  // packages/runtime-core/src/component.ts
+  function createComponentInstance(vnode) {
+    let instance = {
+      data: null,
+      vnode,
+      subTree: null,
+      isMounted: false
+    };
+    return instance;
+  }
+  function setupComponent(instance) {
   }
 
   // packages/runtime-core/src/sequence.ts
@@ -378,6 +391,17 @@ var VueRuntimeDom = (() => {
         patchKeyChildren(n1.children, n2.children, container);
       }
     }
+    function processComponent(n1, n2, container, anchor) {
+      console.log("n1, n2, container, anchor: ", n1, n2, container, anchor);
+      if (n1 == null) {
+        mountComponent(n2, container, anchor);
+      } else {
+      }
+    }
+    function mountComponent(vnode, container, anchor) {
+      const instance = vnode.component = createComponentInstance(vnode);
+      setupComponent(instance);
+    }
     function unmount(n1) {
       if (n1.type === Fragment) {
         return unmountChildren(n1.children);
@@ -400,6 +424,8 @@ var VueRuntimeDom = (() => {
         default:
           if (shapeFlag & 1 /* ELEMENT */) {
             processElement(n1, n2, container, anchor);
+          } else if (shapeFlag & 4 /* STATEFUL_COMPONENT */) {
+            processComponent(n1, n2, container, anchor);
           }
           break;
       }
