@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+
+    // const { h, Text, render, Fragment, getCurrentInstance } = VueRuntimeDOM
+    const { h, Text, render, Fragment } = VueRuntimeDom
+
+    // 组件更新有两种方式
+    // 1.自己的状态改变了，会触发自己的effect重新执行
+    // 2.父组件传递的属性改变了，也要更新
+    const ChildComonent = {
+      props: {
+        a: Number
+      },
+      data() {
+        return {}
+      },
+      setup() {
+        const ins = getCurrentInstance()
+        // console.log('ins: ', ins);
+        // setTimeout(() => {
+        //   ins.props.a = 123 // 成功更新视图 => ins.proxy.a === ins.props.a
+        // }, 2000)
+      },
+      render() {
+        return h('a', this.a)
+      }
+    }
+    const VueComponent = {
+      data() {
+        return { flag: true }
+      },
+      render() {
+        return h(Fragment, [
+          h(ChildComonent, { a: this.flag ? 1 : 2, b: 12 }),
+          h('button', {
+            onClick: () => {
+              this.flag = !this.flag
+            }
+          }, 'click')
+        ])
+
+      }
+    }
+
+    render(h(VueComponent), app)
+
+
+
+  </script>
+</body>
+
+</html>

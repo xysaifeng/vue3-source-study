@@ -18,31 +18,29 @@
     // const { h, Text, render, Fragment } = VueRuntimeDOM
     const { h, Text, render, Fragment } = VueRuntimeDom
 
-    // 外层叫_vnode 里层render返回的叫subTree
     const VueComponent = {
-      data() {
-        return { name: 'tom', age: 12 }
+      props: {// propsOptions 用户提供的告诉vue哪些是属性，其他不是属性的会放到attrs中
+        a: Number,
+        b: Object,
       },
-      render() { // render函数返回虚拟节点，决定最终渲染结果
+      data() {
+        return { name: 'tom', age: 12, }
+      },
+      render() {
+        console.log(this, '---t');
         return h('button', {
           style: { color: 'red' }, onClick: () => {
-            // 更新属性
             this.name = 'jerry'
-            console.log(this);
+            // console.log(this.b, '---b');
+            // this.b.b = 12
+            console.log(this.$attrs, '---attrs');
           }
-        }, h('span', this.name))
+        }, h('span', this.name + this.b.b))
       }
     }
 
-    // console.log(h(VueComponent, { a: 1, key: 'as' }, 2));
-    console.log(h(VueComponent, { a: 1, key: 'as' }, { default: () => h('div', { class: 'c-slot' }, '儿子') }));
+    render(h(VueComponent, { a: 1, b: { b: 1 }, c: 3, name: '99' }), app)
 
-    // 渲染组件思路
-    // 处理h函数，让h函数支持组件类型，渲染的时候，判断如果是组件类型，则调用它的render方法
-    render(h(VueComponent), app)
-
-
-    // 5.实现属性变化，导致页面重新渲染
 
 
   </script>

@@ -3,6 +3,7 @@ import { isNumber, isString } from "@vue/shared";
 import { createComponentInstance, setupComponent } from "./component";
 import { createVNode, Fragment, isSameVNode, ShapeFlags, Text } from "./createVNode";
 import { getSequence } from "./sequence";
+import { queueJob } from './scheduler';
 
 
 export function createRenderer(options) { // 用户可以调用此方法传入对应的渲染选项
@@ -351,6 +352,14 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     }
   }
 
+  function updateComponentPreRender(instance, next) {
+    instance.next = null
+    instance.vnode = next // 更新虚拟节点和next属性
+
+    // instance.props => 之前的props
+    updateProps(instance, instance.props, next.props)
+  }
+
   function setupRenderEffect(instance, container, anchor) {
     // 1.先创建一个effect
 
@@ -358,26 +367,39 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     const componentUpdate = () => {
       // 初次渲染
       const { render, data } = instance;
+      // console.log('instance: ', instance);
       if (!instance.isMounted) {
         // 组件最终渲染的虚拟节点就是subTree,
 
         // 这里调用render会做依赖收集，稍后数据变化了，会重新调用update方法
-        const subTree = render.call(data)
+
+        // 当父组件传入props后，这里不能只传入data了还要传入props
+        // 也就是说，render函数中的this,可以取到data,也可以取到props，还可以取到attrs
+        // const subTree = render.call(data)
+        const subTree = render.call(instance.proxy)
         // 有了subTree,创造真实节点放到容器中
         patch(null, subTree, container, anchor)
         // 实例的subTree赋值，方便下次取值比对
         instance.subTree = subTree
         instance.isMounted = true
       } else {
+        // 统一处理更新
+        let next = instance.next;// next表示有新的虚拟节点
+        if (next) { // 要更新属性或者插槽，再调render
+          // 要在组件更新前更新
+          updateComponentPreRender(instance, next) // 组件更新前更新属性，不会导致页面重新渲染，因为当前effect正在执行，触发的执行和当前的effect一致，会被屏蔽掉
+        }
+
         // 更新：比较两个subTree的区别，再做更新
-        const subTree = render.call(data)
+        // const subTree = render.call(data)
+        const subTree = render.call(instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
       }
-
     }
     // scheduler暂时不传
-    const effect = new ReactiveEffect(componentUpdate)
+    // 20221109 scheduler要传了，不然数据一变就会执行effect，没有实现批处理
+    const effect = new ReactiveEffect(componentUpdate, () => queueJob(instance.update))
 
     // 用户想强制跟新，调update方法
     const update = instance.update = effect.run.bind(effect)
@@ -403,15 +425,80 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
   }
 
+  function hasChange(prevProps, nextProps) {
+    for (let key in nextProps) {
+      if (nextProps[key] != prevProps[key]) return true
+    }
+    return false
+  }
+  function updateProps(instance, prevProps, nextProps) {
+    // 比较 prevProps,nextProps是否有差异
+    // 注意：只需比较外层就好了 因为属性中里面的属性是非响应式的
+
+    // 如果属性个数不一致直接更新（源码）
+
+    // instance.props是个响应式对象
+    for (let key in nextProps) {
+      // 这里改的属性，不是通过代理对象改的 所以不报错
+      // 之前是使用instance.proxy,导致用户不能直接修改props,但是可以通过instance.props来修改
+      instance.props[key] = nextProps[key] // 赋值的时候会重新调用update
+    }
+    // 老的属性多了要删掉
+    for (let key in instance.props) {
+      if (!(key in nextProps)) {
+        delete instance.props[key]
+      }
+    }
+  }
+
+  function shouldComponentUpdate(n1, n2) {
+    const prevProps = n1.props
+    const nextProps = n2.props
+    // 同理，插槽更新了要不要更新，如果要更新，返回true
+    return hasChange(prevProps, nextProps) // 如果属性有变化，说明要更新
+  }
+
+
+  function updateComponent(n1, n2) {
+    // 比较前后属性是否一致，如果不一致则更新
+    const instance = n2.component = n1.component
+    // 注意：props里包含了attrs,源码里有个resolvePropValue只处理props的属性，不是组件接收到的props不用关心
+
+    if (shouldComponentUpdate(n1, n2)) {
+      // 如果要更新，就把最新的虚拟节点绑到实例上
+      instance.next = n2 // 保留最新的虚拟节点
+      instance.update() // 让effect重新执行
+    } else {
+      instance.next = n2 // 保留最新的虚拟节点
+    }
+
+    // vue3.0版本就是写了两份更新逻辑
+    // const prevProps = n1.props
+    // const nextProps = n2.props
+    // 1.updateProps(instance, prevProps, nextProps)
+    // 2.这里还要看插槽要不要更新
+    // 3.应该放到组件的更新逻辑中 不应该再写一份代码了（setupRenderEffect中还有一份更新）
+  }
+
   function processComponent(n1, n2, container, anchor) {
-    console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
+    // console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
     if (n1 == null) {
       // 组件初始化: 考虑把data数据变成响应式的，然后调render方法，但是不能直接把data变成响应式的 要怎么和render建立关系
       mountComponent(n2, container, anchor)
     } else {
       // 组件的更新 包括插槽的更新和属性的更新
+      updateComponent(n1, n2)
     }
   }
+
+  // 20221108总结组件初渲染过程
+  // 1.创建实例 这里有一个代理对象，会代理data,props,attrs
+  // 2.给组件实例赋值，给instance属性赋值
+  // 3.创建一个组件的effect运行
+  // 20221108总结组件初更新过程
+  // 1.组件的状态发生变化，会触发自己的effect执行
+  // 2.父组件属性更新，会执行updateComponent,内部会比较要不要更新，
+  // 如果要更新则调用instance.update方法，在调用render执行，更新属性即可
 
   function unmount(n1) {
     if (n1.type === Fragment) { // Fragment删除所有子节点
@@ -422,6 +509,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
   // n1前一个虚拟节点 n2当前的虚拟节点,将虚拟节点渲染为真实节点
   function patch(n1, n2, container, anchor = null) {
+
     // if (n1 == null) {
     //   // 初次渲染，挂载元素
     //   mountElement(n2, container)

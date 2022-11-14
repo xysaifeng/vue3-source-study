@@ -33,7 +33,7 @@ export function createVNode(type, props = null, children = null) {
   // 渲染的时候有个特点 -- shapFlags：位运算的概念
   // 比如渲染的时候 如何知道这个虚拟节点的儿子是数组、文本、元素？
 
-  if (children) {
+  if (children !== undefined) {
     let temp = 0
     if (isArray(children)) { // children要么是数组要么文本，h中会处理
       temp = ShapeFlags.ARRAY_CHILDREN

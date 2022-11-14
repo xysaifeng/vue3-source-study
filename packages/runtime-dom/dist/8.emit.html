@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, getCurrentInstance, ref, reactive, toRefs } = VueRuntimeDOM
+    const { h, Text, render, Fragment, ref, reactive, toRefs } = VueRuntimeDom
+
+    const useCount = () => {
+      const state = reactive({
+        count: 0,
+        like: {
+          eat: 1
+        }
+      })
+      const handleClick = _ => {
+        state.count++;
+        state.like.eat += 2
+      }
+      return { state, handleClick }
+    }
+
+    const MyCount = {
+      props: {
+        count: {},
+        like: {},
+        b: null
+      },
+      emits: ['childUpdate'],
+      setup(props, { attrs, emit }) {
+        // console.log('attrs: ', attrs);
+        // console.log('props: ', props);
+        // console.log(getCurrentInstance(), '--this');
+        return () => {
+          // const { count, like } = toRefs(props)
+          const { count, like } = props
+          // console.log('like: ', like);
+
+          // console.log('attrs: ', count);
+          // return h('div', null, props.count)
+          return h(Fragment, [
+            h('div', null, props.count),
+            h('button', {
+              onClick: () => {
+                // console.log(getCurrentInstance, '--this');
+                emit('childUpdate', 3, 4, 5)
+
+              }
+            }, '子组件触发'),
+          ])
+
+          // console.log('attrs: ', attrs);
+          // return h('div', null, attrs.count)
+
+          // console.log('like: ', like.eat);
+          // return h('div', null, like.eat)
+
+          // console.log('count: ', like.value.eat);
+          // return h('div', null, like.value.eat)
+        }
+      }
+    }
+
+    const VueComponent = {
+      props: {
+        a: {
+          type: Number,
+          default: 12
+        }
+      },
+      setup() {
+        const { state, handleClick } = useCount()
+        return { ...toRefs(state), handleClick }
+      },
+      render() {
+        return h('div', [h('button', {
+          onClick: () => {
+            this.handleClick()
+          }
+        }, 'add'), h(MyCount, {
+          count: this.count, b: 66, like: this.like, onChildUpdate: (...args) => {
+            console.log(args, 'zizujian updat4e');
+            this.handleClick()
+          }
+        })])
+      }
+    }
+
+    render(h(VueComponent, { a: 10, }), app)
+
+
+
+  </script>
+</body>
+
+</html>

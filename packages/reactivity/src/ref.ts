@@ -25,7 +25,7 @@ export function proxyRefs(object) {
   return new Proxy(object, {
     get(target, key, receiver) {
       const r = Reflect.get(target, key, receiver);
-      console.log('r: ', r);
+      // console.log('r: ', r);
       return r.__v_isRef ? r.value : r
     },
     set(target, key, value, receiver) {
@@ -45,7 +45,7 @@ export function toRefs(object) {
   for (let key in object) {
     res[key] = toRef(object, key)
   }
-  console.log(res);
+  // console.log(res);
   return res
 }
 

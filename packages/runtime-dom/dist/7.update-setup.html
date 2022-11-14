@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, getCurrentInstance, ref, reactive, toRefs } = VueRuntimeDOM
+    const { h, Text, render, Fragment, ref, reactive, toRefs } = VueRuntimeDom
+
+    // optionsApi VS  compositionApi 各有优缺点
+    // optionsApi：
+    // 缺点：
+    // 1.如果代码多、复杂，那么一个逻辑要放到不同的地方，不能做高内聚低耦合
+    // 2.不支持tree-shaking
+    // 3.this指向迷惑
+    // compositionApi：
+    // 优点：把同一个功能耦合在一起，不再用this，还可以不用options的形势，更利于tree-shaking，更利于代码复用，也就处理了命名冲突问题
+
+    // compositionApi 入口都在setup中，也就是说compositionApi只能用在setup中
+
+    const useCount = () => {
+      const state = reactive({
+        count: 0
+      })
+      const handleClick = _ => state.count++
+      return { state, handleClick }
+    }
+    const VueComponent = {
+      props: {
+        a: {
+          type: Number,
+          default: 12
+        }
+      },
+      // setup 1.可以返回一个render函数 2.可以返回一个对象，可以在render函数中使用
+      setup() {
+        console.log(arguments);
+        const { state, handleClick } = useCount()
+        return { ...toRefs(state), handleClick }
+        // return function () {
+        //   return h('h1', 'hello')
+        // }
+      },
+      render() {
+        console.log(this, '-----rneder');
+        return h('div', [h('button', {
+          onClick: () => {
+            // this.count++
+            // this.count++
+            // this.count++
+
+            this.handleClick()
+          }
+        }, 'add'), h(Text, null, this.count)])
+      }
+    }
+
+    render(h(VueComponent, { a: 10 }), app)
+
+
+
+  </script>
+</body>
+
+</html>
