@@ -37,6 +37,9 @@ export function createVNode(type, props = null, children = null) {
     let temp = 0
     if (isArray(children)) { // children要么是数组要么文本，h中会处理
       temp = ShapeFlags.ARRAY_CHILDREN
+    } else if (isObject(children)) { // 是对象就是插槽
+      temp = ShapeFlags.SLOTS_CHILDREN
+      // 这里孩子还有其他情况 eg:Teleport
     } else {
       children = String(children)
       temp = ShapeFlags.TEXT_CHILDREN

@@ -1,5 +1,6 @@
 import { proxyRefs, reactive } from '@vue/reactivity';
 import { hasOwn, isFunction, isObject } from '@vue/shared';
+import { ShapeFlags } from './createVNode';
 
 
 export function createComponentInstance(vnode) {
@@ -18,6 +19,8 @@ export function createComponentInstance(vnode) {
     // instance.proxy.$message
     proxy: null,//代表对象,初始化时候赋值
     setupState: {},// setup返回的如果是对象，则要给该对象赋值
+    slots: {}, // 存放组件的所有插槽
+    exposed: {}, // 存放要暴露出去的属性
   }
   return instance
 }
@@ -46,7 +49,8 @@ function initProps(instance, rawProps) {
 }
 
 const publicProperties = {
-  $attrs: instance => instance.attrs
+  $attrs: instance => instance.attrs,
+  $slots: instance => instance.slots,
 }
 const instanceProxy = {
   get(target, key, receiver) {
@@ -83,6 +87,14 @@ const instanceProxy = {
   }
 }
 
+function initSlots(instance, children) {
+  // 判断虚拟节点的类型是否是插槽
+  if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+    instance.slots = children // 将用户的children映射到实例上
+  }
+
+}
+
 export function setupComponent(instance) {
 
   // type就是用户传入的属性
@@ -90,7 +102,8 @@ export function setupComponent(instance) {
   const { data, render, setup } = type;
   // 属性的初始化
   initProps(instance, props)
-
+  // 初始化插槽，处理实例上的属性children,
+  initSlots(instance, children)// 
   instance.proxy = new Proxy(instance, instanceProxy)
 
   if (data) {
@@ -115,8 +128,8 @@ export function setupComponent(instance) {
 
       },
       attrs: instance.attrs,
-      // slots // 插槽
-      // expose // 暴露
+      slots: instance.slots, // 插槽
+      expose: exposed => instance.exposed = exposed || {} // 暴露
     }
     const setupResult = setup(instance.props, context)
     if (isFunction(setupResult)) {

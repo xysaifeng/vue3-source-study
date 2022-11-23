@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, getCurrentInstance, ref, reactive, toRefs } = VueRuntimeDOM
+    const { h, Text, render, Fragment, ref, reactive, toRefs } = VueRuntimeDom
+
+    // webComponent的组成有props event slots
+    const MyCount = {
+      setup(props, { attrs, emit, slots, expose }) {
+        // console.log('slots: ', slots);
+        // console.log(this, 'this1'); // window
+
+        // setup中可以通过slots获取插槽
+
+        expose({ // 通ref获取组件实例 可以通过实例调用expose属性
+          a: 1,
+          b: 2
+        })
+        // console.log(getCurrentInstance(), '---i');
+        return function () {
+          // render函数中可以通过this和slots获取插槽
+          console.log(this, 'this');// 组件实例
+          return h(Fragment, [
+            h('div', this.$slots.default()),
+            h('div', slots.header()),
+            h('div', slots.main()),
+            h('div', slots.footer()),
+          ])
+        }
+      }
+    }
+
+    const VueComponent = {
+      render() {
+        return h('div', [h(MyCount, null, { // 孩子的类型是一个对象
+          default: () => {
+            return h('a', 'default')
+          },
+          header: () => {
+            return h('a', 'hello')
+          },
+          main: () => {
+            return h('a', 'main')
+          },
+          footer: () => {
+            return h('a', 'footer')
+          },
+        })])
+      }
+    }
+    render(h(VueComponent, { a: 10, }), app)
+  </script>
+</body>
+
+</html>
