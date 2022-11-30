@@ -2,6 +2,13 @@ import { proxyRefs, reactive } from '@vue/reactivity';
 import { hasOwn, isFunction, isObject } from '@vue/shared';
 import { ShapeFlags } from './createVNode';
 
+export let instance = null
+export const getCurrentInstance = () => {
+  return instance
+}
+export const setCurrentInstance = (i) => {
+  instance = i
+}
 
 export function createComponentInstance(vnode) {
   let instance = {
@@ -131,7 +138,9 @@ export function setupComponent(instance) {
       slots: instance.slots, // 插槽
       expose: exposed => instance.exposed = exposed || {} // 暴露
     }
+    setCurrentInstance(instance) // setup启动前暴露出去instance
     const setupResult = setup(instance.props, context)
+    setCurrentInstance(null) // setup启动后清空instance
     if (isFunction(setupResult)) {
       // 如果setup返回的是render 则采用这个render
       instance.render = setupResult

@@ -16,3 +16,10 @@ export const isNumber = value => {
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export const hasOwn = (obj, key) => hasOwnProperty.call(obj, key)
+
+export function invokerFns(fns) {
+  // 还可以加上判断有没有错误的逻辑
+  for (let i = 0; i < fns.length; i++) {
+    fns[i]()
+  }
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, getCurrentInstance, ref, reactive, toRefs, onMounted } = VueRuntimeDOM
+    const { h, Text, render, Fragment, getCurrentInstance, onMounted, ref, reactive, toRefs } = VueRuntimeDom
+
+    function useMount() {
+      onMounted(() => {
+        console.log('useMount=========onMounted');
+        console.log(getCurrentInstance(), '===i');
+      })
+    }
+
+    // onMounted(() => { // error
+    //   console.log('useMount=========onMounted');
+    // })
+
+    // const instance = getCurrentInstance()
+    // console.log('instance: 1', instance); // null
+
+    // 当组件渲染的时候，实例会收集onMounted方法，把onMounted中的回调和当前实例关联起来，等组件渲染完后，就会去调对应的回调函数
+    const VueComponent = {
+      setup() { // setup中没有this的概念
+        // 1.render函数渲染完毕后执行的方法 这样写生命周期目的是为了方便复用
+        // 2.生命周期要在setup中调用，因为生命周期要将当前组件实例收集起来
+        // 3.setup中没有this的概念 如果要获取实例须调用getCurrentInstance
+
+        // const instance = getCurrentInstance()
+        // console.log('instance: ', instance);
+        // console.log(app.innerHTML, '-s'); // ''
+
+        useMount()
+        onMounted(function () {
+          console.log(arguments, '=========onMounted 1');
+          // console.log(getCurrentInstance(), '===i');
+        })
+        onMounted(() => {
+          console.log('=========onMounted 2');
+
+        })
+        onMounted(() => {
+          console.log('=========onMounted 3');
+        })
+
+      },
+      render() {
+        return h('div', 'hellow')
+      }
+    }
+    render(h(VueComponent, { a: 10, }), app)
+  </script>
+</body>
+
+</html>

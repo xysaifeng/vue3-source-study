@@ -1,5 +1,5 @@
 import { ReactiveEffect } from './../../reactivity/src/effect';
-import { isNumber, isString } from "@vue/shared";
+import { invokerFns, isNumber, isString } from "@vue/shared";
 import { createComponentInstance, setupComponent } from "./component";
 import { createVNode, Fragment, isSameVNode, ShapeFlags, Text } from "./createVNode";
 import { getSequence } from "./sequence";
@@ -371,6 +371,11 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       if (!instance.isMounted) {
         // 组件最终渲染的虚拟节点就是subTree,
 
+        const { bm, m } = instance
+        if (bm) {
+          invokerFns(bm)
+        }
+
         // 这里调用render会做依赖收集，稍后数据变化了，会重新调用update方法
 
         // 当父组件传入props后，这里不能只传入data了还要传入props
@@ -382,6 +387,9 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         // 实例的subTree赋值，方便下次取值比对
         instance.subTree = subTree
         instance.isMounted = true
+        if (m) {
+          invokerFns(m)
+        }
       } else {
         // 统一处理更新
         let next = instance.next;// next表示有新的虚拟节点
@@ -395,6 +403,9 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         const subTree = render.call(instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
+        if (instance.u) {
+          invokerFns(instance.u)
+        }
       }
     }
     // scheduler暂时不传
