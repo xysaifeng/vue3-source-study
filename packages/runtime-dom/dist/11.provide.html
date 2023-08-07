@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, provide, inject, getCurrentInstance, ref, reactive, toRefs, onMounted, readonly } = VueRuntimeDOM
+    const { h, Text, render, Fragment, provide, inject, getCurrentInstance, onMounted, ref, reactive, toRefs, readOnly } = VueRuntimeDom
+
+    // 原型链方式查找
+    // 利用组件的渲染流程：父 instance.provides = {state:state} => 子instance.provides = instance.parent.provides  => 孙子instance.provides = instance.parent.provides
+    // parent: 需要构建组件的父子关系，如何构建：渲染的时候 我们按照父=>子（标记我的爹是谁）=>孙（标记我的爹是谁） 的方式渲染，
+
+    const GrandsonComponent = {
+      setup() {
+        console.log(getCurrentInstance());
+        const s = inject('state')
+        console.log('s: GrandsonComponent', s);
+        return function () {
+          return h(Text, 'GrandsonComponent')
+        }
+      }
+    }
+
+    const childComponent = {
+      setup() {
+        // console.log(getCurrentInstance(), '====d');
+
+        const state = reactive({// 状态管理的核心，
+          name: 'lilie', age: 22
+        })
+        provide('state', state)
+        // const s = inject('state', { name: '备份', age: '88' })
+        // console.log('s: ', s);
+        // s.age = 124 
+        return function () {
+          // return h('div', s.name + '-' + s.age)
+          // debugger
+          debugger
+          return h('div', { style: { color: 'red' } }, h(GrandsonComponent))
+          // return h('div', 'ok')
+          // return h(GrandsonComponent)
+        }
+      }
+    }
+    // pinia的原理 其实就是弄了一坨响应式数据，谁要用注入进去就可以了
+    const VueComponent = {
+      setup(props) {
+        const state = reactive({// 状态管理的核心，
+          name: 'tom', age: 12
+        })
+        // setTimeout(() => {
+        //   state.name = 'jack'
+        // }, 2000);
+        provide('state', state)
+        return () => {
+          return h(childComponent)
+        }
+      },
+
+    }
+    render(h(VueComponent, { a: 10, }), app)
+  </script>
+</body>
+
+</html>

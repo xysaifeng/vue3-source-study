@@ -11,7 +11,7 @@
 import { isArray, isObject } from "@vue/shared"
 import { createVNode, isVNode } from "./createVNode"
 
-export function h(type, propsOrChildren, children) {
+export function h(type, propsOrChildren?, children?) {
   // 1.参数为两个 1）元素+属性 2）元素+儿子
 
   // h(类型，元素对象)

@@ -113,7 +113,8 @@ export function track(target, key) {
 
 export function trackEffects(deps) {
   let shouldTrack = !deps.has(activeEffect)
-  if (shouldTrack) {
+  // if (shouldTrack) { // 加入activeEffect非空判断 否则在defineAsyncComponent的setup中定义后立即访问会报错 add:2023-08-06 23:55
+  if (shouldTrack && activeEffect) {
     deps.add(activeEffect)
     // activeEffect.deps的作用就是让effect记录用到了哪些属性
     activeEffect.deps.push(deps)

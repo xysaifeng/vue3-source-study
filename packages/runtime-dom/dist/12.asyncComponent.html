@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { h, Text, render, Fragment, provide, inject, getCurrentInstance, ref, reactive, toRefs, onMounted, readonly, defineAsyncComponent } = VueRuntimeDOM
+    const { h, Text, render, Fragment, provide, inject, getCurrentInstance, onMounted, ref, reactive, toRefs, readOnly, defineAsyncComponent } = VueRuntimeDom
+
+    // const asyncComponent = defineAsyncComponent(() => {
+    //   return new Promise((resolve) => {
+    //     setTimeout(() => {
+    //       resolve({
+    //         render: () => h(Text, 'ok')
+    //       })
+    //     }, 2000);
+    //   })
+    // })
+
+    // const asyncComponent = defineAsyncComponent(() => import('./test.js')) // ok
+    // const asyncComponent = defineAsyncComponent(async () => {
+    //   await new Promise((r) => {
+    //     setTimeout(() => {
+    //       r()
+    //     }, 2000);
+    //   })
+    //   return import('./test.js').then(d => d.default)
+    // }) // ok
+
+
+    const asyncComponent = defineAsyncComponent({
+      loader: async () => {
+        await new Promise((r) => {
+          setTimeout(() => {
+            r()
+          }, 3000);
+        })
+        // return import('./test.js') // 某种情况下会报错
+        return import('./test.js').then(d => d.default)
+      },
+      timeout: 2000,
+      // delay: 0,
+      loadingComponent: {
+        render() {
+          return h('div', 'loading...')
+        }
+      },
+
+      errorComponent: {
+        render() {
+          return h('div', 'error')
+        }
+      },
+
+      // errorComponent: import('./test.js').then(d => { // 报错警告⚠️
+      //   console.log(d.errorCom, '---eee');
+      //   return d.errorCom()
+      // }),
+
+    }) // ok
+
+    render(h(asyncComponent), app)
+  </script>
+</body>
+
+</html>

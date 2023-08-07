@@ -10,7 +10,7 @@ export const setCurrentInstance = (i) => {
   instance = i
 }
 
-export function createComponentInstance(vnode) {
+export function createComponentInstance(vnode, parent) {
   let instance = {
     data: null,// 页面组件的数据
     vnode,// 标识实例对应的虚拟节点vnode，双向记忆
@@ -28,6 +28,10 @@ export function createComponentInstance(vnode) {
     setupState: {},// setup返回的如果是对象，则要给该对象赋值
     slots: {}, // 存放组件的所有插槽
     exposed: {}, // 存放要暴露出去的属性
+    parent, // 标记当前组件的父亲是谁
+    provides: parent && parent.provides ? parent.provides : Object.create(null) // 父 => 子 => 孙 共用一个对象，但是这种写法有问题，
+    // 假如儿子在组件里添加了provides，那么父亲的也会变
+    // 解决：在用户使用provide方法的时候 将父亲的provides拷贝一份
   }
   return instance
 }

@@ -50,19 +50,18 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     }
   }
 
-  function mountChildren(children, container) {
-
+  function mountChildren(children, container, parent) {
     for (let i = 0; i < children.length; i++) {
       // const child = children[i] // 不行
       // * child可能是文本，需要把文本变为虚拟节点
       const child = normalize(children, i)
       // 递归渲染子节点
       // 经过处理后的child可能是文本了
-      patch(null, child, container)
+      patch(null, child, container, parent)
     }
   }
 
-  function mountElement(vnode, container, anchor) {
+  function mountElement(vnode, container, anchor, parent) {
     let { type, props, children, shapeFlag } = vnode
     // 先创建自己再创建儿子
 
@@ -79,7 +78,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       hostSetElementText(el, children)
     }
     if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-      mountChildren(children, el)
+      mountChildren(children, el, parent)
     }
 
     hostInsert(el, container, anchor)
@@ -250,7 +249,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     }
   }
 
-  function patchChildren(n1, n2, el) {
+  function patchChildren(n1, n2, el, parent) {
     const c1 = n1.children
     const c2 = n2.children
 
@@ -302,14 +301,14 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
           hostSetElementText(el, '')
         }
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          mountChildren(c2, el)
+          mountChildren(c2, el, parent)
         }
       }
     }
   }
 
   // 比较元素，先比较自己的props,再比较儿子的，接着孙子的
-  function patchElement(n1, n2) {
+  function patchElement(n1, n2, parent) {
     // 强调：n1和n2能复用说明dom节点就不要删除了
     const el = n2.el = n1.el // 1）节点复用
 
@@ -318,14 +317,15 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     patchProps(oldProps, newProps, el) // 2)比较属性
 
     // 3)自己比较完了比较儿子
-    patchChildren(n1, n2, el)
+    patchChildren(n1, n2, el, parent)
   }
 
-  function processElement(n1, n2, container, anchor) {
+  function processElement(n1, n2, container, anchor, parent) {
     if (n1 == null) {
-      mountElement(n2, container, anchor)
+      // 在挂载元素的时候也要标识自己的父亲谁 所以传入parent
+      mountElement(n2, container, anchor, parent)
     } else {
-      patchElement(n1, n2,)
+      patchElement(n1, n2, parent)
     }
   }
   function processText(n1, n2, container) {
@@ -344,9 +344,10 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
       }
     }
   }
-  function processFragment(n1, n2, container) {
+  function processFragment(n1, n2, container, parent) {
     if (n1 == null) {
-      mountChildren(n2.children, container)
+      // 挂载儿子的时候 需要知道自己的父亲是谁 所以传入parent
+      mountChildren(n2.children, container, parent)
     } else {
       patchKeyChildren(n1.children, n2.children, container)
     }
@@ -360,6 +361,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     updateProps(instance, instance.props, next.props)
   }
 
+  // setupRenderEffect：渲染当前组件的内容
   function setupRenderEffect(instance, container, anchor) {
     // 1.先创建一个effect
 
@@ -383,7 +385,8 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         // const subTree = render.call(data)
         const subTree = render.call(instance.proxy)
         // 有了subTree,创造真实节点放到容器中
-        patch(null, subTree, container, anchor)
+        // 渲染儿子（当前组件）的时候，它的父亲就是实例 所以传入instance =>子组件的父亲就是当前实例
+        patch(null, subTree, container, anchor, instance)
         // 实例的subTree赋值，方便下次取值比对
         instance.subTree = subTree
         instance.isMounted = true
@@ -401,7 +404,8 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         // 更新：比较两个subTree的区别，再做更新
         // const subTree = render.call(data)
         const subTree = render.call(instance.proxy)
-        patch(instance.subTree, subTree, container, anchor)
+        // 在更新组件的时候 也要传入instance 
+        patch(instance.subTree, subTree, container, anchor, instance) // 子组件的父亲就是当前实例，就构建好了父子关系
         instance.subTree = subTree
         if (instance.u) {
           invokerFns(instance.u)
@@ -418,13 +422,13 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
   }
 
-  function mountComponent(vnode, container, anchor) {
+  function mountComponent(vnode, container, anchor, parent) {
     // 根据虚拟节点n2产生一个实例 new Component => 组件实例
 
     // 1.组件挂载前需要产生一个组件的实例（就是一个对象），实例上包含了组件的状态、属性、对应的生命周期...
     // 创建的实例放在虚拟节点上,类似 let el = vnode.el = document.createElement()
     // 方便更新的时候拿到组件实例去做更新操作
-    const instance = vnode.component = createComponentInstance(vnode)
+    const instance = vnode.component = createComponentInstance(vnode, parent)
     // 2.组件内部需要处理的比如：组件的插槽，处理组件的属性...，给组件实例赋值
     // 这个地方主要处理属性和插槽
 
@@ -491,11 +495,11 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     // 3.应该放到组件的更新逻辑中 不应该再写一份代码了（setupRenderEffect中还有一份更新）
   }
 
-  function processComponent(n1, n2, container, anchor) {
+  function processComponent(n1, n2, container, anchor, parent) {
     // console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
     if (n1 == null) {
       // 组件初始化: 考虑把data数据变成响应式的，然后调render方法，但是不能直接把data变成响应式的 要怎么和render建立关系
-      mountComponent(n2, container, anchor)
+      mountComponent(n2, container, anchor, parent)
     } else {
       // 组件的更新 包括插槽的更新和属性的更新
       updateComponent(n1, n2)
@@ -512,14 +516,19 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
   // 如果要更新则调用instance.update方法，在调用render执行，更新属性即可
 
   function unmount(n1) {
+    let { shapeFlag, component } = n1
     if (n1.type === Fragment) { // Fragment删除所有子节点
       return unmountChildren(n1.children)
+    } else if (shapeFlag & ShapeFlags.COMPONENT) { // 组件的卸载
+      // 卸载虚拟节点(组件要卸载的是subTree而不是自己)
+      return unmount(component.subTree)
     }
     hostRemove(n1.el)
   }
 
   // n1前一个虚拟节点 n2当前的虚拟节点,将虚拟节点渲染为真实节点
-  function patch(n1, n2, container, anchor = null) {
+  // 第一次渲染的时候parent为null
+  function patch(n1, n2, container, anchor = null, parent = null) {
 
     // if (n1 == null) {
     //   // 初次渲染，挂载元素
@@ -541,13 +550,13 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         processText(n1, n2, container)
         break;
       case Fragment:
-        processFragment(n1, n2, container)
+        processFragment(n1, n2, container, parent)
         break;
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
-          processElement(n1, n2, container, anchor)
+          processElement(n1, n2, container, anchor, parent)
         } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-          processComponent(n1, n2, container, anchor)
+          processComponent(n1, n2, container, anchor, parent)
         }
         break;
     }
