@@ -86,9 +86,9 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
 
 
-  function unmountChildren(children) {
+  function unmountChildren(children, parent) {
     children.forEach(child => {
-      unmount(child)
+      unmount(child, parent)
     });
   }
 
@@ -169,7 +169,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     } else if (i > e2) { // 老的多新的少
       if (i <= e1) {
         while (i <= e1) {
-          unmount(c1[i])
+          unmount(c1[i], parent)
           i++
         }
       }
@@ -203,7 +203,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         const oldVNode = c1[i]
         const newIndex = keyToNewIndexMap.get(oldVNode.key) // 用老的去找 看看新的里面有没有
         if (newIndex == null) {
-          unmount(oldVNode) // 新的里面找不用将老的移除
+          unmount(oldVNode, parent) // 新的里面找不用将老的移除
         } else {
           // 新的老的都有，可以记录下来当前对应的索引，稍后可以判断出哪些元素不需要移动
           // 用新的位置和 老的位置做一个关联
@@ -275,7 +275,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     // 文本    空 √
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) { //  文本    数组
-        unmountChildren(c1)
+        unmountChildren(c1, parent)
       }
       if (c1 !== c2) {
         hostSetElementText(el, c2)
@@ -290,7 +290,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
         } else {
           // 新的为空  =>  空    数组    删除所有儿子
           console.log(c1,);
-          unmountChildren(c1)
+          unmountChildren(c1, parent)
         }
       } else {
         // 数组    文本    清空文本，进行挂载
@@ -359,6 +359,9 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
     // instance.props => 之前的props
     updateProps(instance, instance.props, next.props)
+
+    // 还要更新插槽 =》add on 20230816 23:02 用新的节点的插槽覆盖老的节点的插槽
+    Object.assign(instance.slots, next.children)
   }
 
   // setupRenderEffect：渲染当前组件的内容
@@ -432,6 +435,21 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     // 2.组件内部需要处理的比如：组件的插槽，处理组件的属性...，给组件实例赋值
     // 这个地方主要处理属性和插槽
 
+    // 为什么取名是renderer 因为是渲染时候需要的东西,稍后渲染时要用到方法
+    // 为什么这样做？=》因为稍后可以通过实例的上下文拿到实例的所有方法（通过getCurrentInstance拿到ctx.renderer里的方法）
+    instance.ctx.renderer = {
+      // 这里需要放置几个方法
+      // 1.需要创造一个新节点 需要一个方法createElement，这个方法干嘛用的？ =》 dom缓存以后，需要创造一个div,在切换视图的时候，将渲染好的html（缓存dom）迁移到div中
+      createElement: hostCreateElement, // 创建元素
+      // 2.把创建的dom（缓存dom）移动到div中
+      move(vnode, container) { // 移动dom
+        // 把虚拟节点对应组件的subTree.el移动到container中
+        hostInsert(vnode.component.subTree.el, container)
+      },
+      // 3.组件卸载
+      unmount // 卸 dom
+    }
+
     setupComponent(instance) // 给组件复制
     // 3.给组件产生一个effect，这样组件数据变化更新后可以重新渲染,当数据变化了可以重新渲染
     setupRenderEffect(instance, container, anchor)
@@ -470,7 +488,13 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     const prevProps = n1.props
     const nextProps = n2.props
     // 同理，插槽更新了要不要更新，如果要更新，返回true
-    return hasChange(prevProps, nextProps) // 如果属性有变化，说明要更新
+    if (hasChange(prevProps, nextProps)) { // 如果属性有变化，说明要更新
+      return true
+    }
+    if (n1.children || n2.children) { // 如果有插槽就要更新
+      return true
+    }
+    return false
   }
 
 
@@ -498,8 +522,16 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
   function processComponent(n1, n2, container, anchor, parent) {
     // console.log('n1, n2, container, anchor: ', n1, n2, container, anchor);
     if (n1 == null) {
-      // 组件初始化: 考虑把data数据变成响应式的，然后调render方法，但是不能直接把data变成响应式的 要怎么和render建立关系
-      mountComponent(n2, container, anchor, parent)
+      // update on 20230820 12:04 判断最新虚拟节点上是否是keepalive标识 如果是就不走render了
+      if (n2.shapeFlag & ShapeFlags.COMPONENT_KEEP_ALIVE) {
+        // 当第一次Component1卸载的时候，需要将dom元素移动到内存中 下次再渲染将其取出来使用
+        console.log('norener ');
+        parent.ctx.active(n2, container, anchor)
+      } else {
+        // 组件初始化: 考虑把data数据变成响应式的，然后调render方法，但是不能直接把data变成响应式的 要怎么和render建立关系
+        mountComponent(n2, container, anchor, parent)
+      }
+
     } else {
       // 组件的更新 包括插槽的更新和属性的更新
       updateComponent(n1, n2)
@@ -515,13 +547,20 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
   // 2.父组件属性更新，会执行updateComponent,内部会比较要不要更新，
   // 如果要更新则调用instance.update方法，在调用render执行，更新属性即可
 
-  function unmount(n1) {
+  function unmount(n1, parent) {
     let { shapeFlag, component } = n1
+    // 这是keepalive的卸载 add on 20230827 12:37
+    if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+      // vnode n1上面是拿不到刚才的两个方法（激活失活方法）的，在n1的父节点上面，所以要传入parent
+      parent.ctx.deactivated(n1)  // n1穿进去 因为n1上包含真是的DOM元素
+    }
+
+    // 这是正常的卸载
     if (n1.type === Fragment) { // Fragment删除所有子节点
-      return unmountChildren(n1.children)
+      return unmountChildren(n1.children, parent)
     } else if (shapeFlag & ShapeFlags.COMPONENT) { // 组件的卸载
       // 卸载虚拟节点(组件要卸载的是subTree而不是自己)
-      return unmount(component.subTree)
+      return unmount(component.subTree, parent)
     }
     hostRemove(n1.el)
   }
@@ -539,7 +578,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
 
     if (n1 && !isSameVNode(n1, n2)) {
       // 不是同一个节点，则把之前的节点n1删掉
-      unmount(n1)
+      unmount(n1, parent)
       n1 = null // 将n1重置为null,下面会走n2的初始化
     }
 
@@ -568,7 +607,7 @@ export function createRenderer(options) { // 用户可以调用此方法传入�
     if (vnode == null) { // 卸载
       console.log('xx');
       if (container._vnode) {
-        unmount(container._vnode)
+        unmount(container._vnode, null)
       }
     } else { // 渲染 更新
       // 要判断是初次渲染还是更新，所以要有条件

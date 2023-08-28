@@ -17,7 +17,7 @@ export function defineAsyncComponent(loaderOrOptions) {
   let Component = null
   return {
     setup() {
-      const { loader, timeout, errorComponent, delay, loadingComponent } = loaderOrOptions
+      const { loader, timeout, errorComponent, delay, loadingComponent, onError } = loaderOrOptions
       const loaded = ref(false)
       const error = ref(false)
       const loading = ref(false)
@@ -27,21 +27,45 @@ export function defineAsyncComponent(loaderOrOptions) {
           error.value = true
         }, timeout);
       }
+      let timer
       if (delay) {
-        setTimeout(() => {
+        timer = setTimeout(() => {
           loading.value = true
         }, delay);
       } else {
+        // 没有延时直接显示loading 
         loading.value = true
       }
 
-      loader().then(component => {
+      let retryCount = 1
+      function load() {
+        return loader().catch(err => {
+          if (onError) {
+            return new Promise((resolve, reject) => {
+              const retry = () => {
+                retryCount++
+                resolve(load())
+              }
+              const fail = () => reject()
+              onError(err, retry, fail, retryCount)
+            })
+          } else {
+            throw err
+          }
+        })
+      }
+
+      load().then(component => {
         loaded.value = true
         Component = component
       }).catch(err => {
         error.value = true
       }).finally(() => {
         loading.value = false
+        //bug: 如果写了delay但是loader很快加载完毕了，delay的时间到了 还是会吧loading改为true
+        // fix:如果有delay还是要有清空定时器的操作
+        clearTimeout(timer)
+        timer = null
       })
 
       return () => {

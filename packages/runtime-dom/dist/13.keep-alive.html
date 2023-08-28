@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.prod.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+
+  <script>
+    // const { KeepAlive, h, Text, render, Fragment, provide, inject, getCurrentInstance, ref, reactive, toRefs, onMounted, readonly, defineAsyncComponent } = VueRuntimeDOM
+    const { KeepAlive, h, Text, render, Fragment, provide, inject, getCurrentInstance, onMounted, ref, reactive, toRefs, readOnly, defineAsyncComponent } = VueRuntimeDom
+
+    // KeepAlive的核心原理是靠插槽的更新
+    // 思路：为了性能考虑，弄一个盒子将渲染结果临时移动到内存中，后续切换回来，再从内存中直接拿出来就好了 =》缓存的是DOM节点
+
+    const C1 = {
+      name: "C1",
+      render() {
+        console.log('--------C1 render');
+        return h('div', 'c1')
+      }
+    }
+    const C2 = {
+      name: "C2",
+      render() {
+        console.log('--------C2 render');
+        return h('div', 'c2')
+      }
+    }
+    const C3 = {
+      name: "C3",
+      render() {
+        console.log('--------C3 render');
+        return h('div', 'c3')
+      }
+    }
+
+    // render(h(KeepAlive, null, [C1, C2]), app) // error
+
+    render(h(KeepAlive, { max: 3 }, {
+      default: () => h(C1, { key: null, name: '1' })
+    }), app)
+
+    setTimeout(() => {
+      render(h(KeepAlive, { max: 3 }, {
+        default: () => h(C2, { key: null, name: '2' })
+      }), app)
+    }, 2000);
+
+    setTimeout(() => {
+      render(h(KeepAlive, { max: 3 }, {
+        default: () => h(C3, { key: null, name: '2' })
+      }), app)
+    }, 4000);
+
+    // setTimeout(() => {
+    //   render(h(KeepAlive, { max: 2 }, {
+    //     default: () => h(C3, { key: null, name: '3' })
+    //   }), app)
+    // }, 4000);
+
+    setTimeout(() => {
+      render(h(KeepAlive, { max: 3 }, {
+        default: () => h(C1, { key: null, name: '1' })
+      }), app)
+    }, 6000);
+  </script>
+</body>
+
+</html>

@@ -12,6 +12,7 @@ export const setCurrentInstance = (i) => {
 
 export function createComponentInstance(vnode, parent) {
   let instance = {
+    ctx: {} as any, // 当前实例的上下文，用于存储信息的 =》 keep-alive要用到
     data: null,// 页面组件的数据
     vnode,// 标识实例对应的虚拟节点vnode，双向记忆
     subTree: null,// 组件对应的渲染的虚拟节点

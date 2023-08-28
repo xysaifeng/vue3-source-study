@@ -44,13 +44,14 @@
         await new Promise((r) => {
           setTimeout(() => {
             r()
-          }, 3000);
+          }, 1500);
         })
         // return import('./test.js') // 某种情况下会报错
-        return import('./test.js').then(d => d.default)
+        // return import('./test.js').then(d => d.default)
+        return import('./test1.js').then(d => d.default)
       },
       timeout: 2000,
-      // delay: 0,
+      // delay: 2000,
       loadingComponent: {
         render() {
           return h('div', 'loading...')
@@ -62,6 +63,23 @@
           return h('div', 'error')
         }
       },
+
+      /**
+       * 
+       * @param {*} error 错误信息对象
+       * @param {*} retry 一个函数 用于只是当Promise加载器reject时，加载器是否应该重试
+       * @param {*} fail  一个函数 指示加载程序结束退出
+       * @param {*} attempts 允许最大重试次数
+      */
+      // onError(error, retry,fail,attempts) {}
+      onError(error, retry, fail, attempts) {
+        if (attempts <= 3) {
+          console.log(attempts, '=s');
+          retry()
+        }
+
+        console.log(attempts, '-----onerr');
+      }
 
       // errorComponent: import('./test.js').then(d => { // 报错警告⚠️
       //   console.log(d.errorCom, '---eee');

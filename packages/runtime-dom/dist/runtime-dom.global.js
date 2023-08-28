@@ -35,6 +35,7 @@ var VueRuntimeDom = (() => {
   var src_exports = {};
   __export(src_exports, {
     Fragment: () => Fragment,
+    KeepAlive: () => KeepAlive,
     LifeCycle: () => LifeCycle,
     Text: () => Text,
     computed: () => computed,
@@ -47,7 +48,7 @@ var VueRuntimeDom = (() => {
     inject: () => inject,
     onBeforeMount: () => onBeforeMount,
     onMounted: () => onMounted,
-    onUPdated: () => onUPdated,
+    onUpdated: () => onUpdated,
     provide: () => provide,
     proxyRefs: () => proxyRefs,
     reactive: () => reactive,
@@ -435,8 +436,9 @@ var VueRuntimeDom = (() => {
   var setCurrentInstance = (i) => {
     instance = i;
   };
-  function createComponentInstance(vnode, parent) {
+  function createComponentInstance(vnode, parent2) {
     let instance2 = {
+      ctx: {},
       data: null,
       vnode,
       subTree: null,
@@ -450,8 +452,8 @@ var VueRuntimeDom = (() => {
       setupState: {},
       slots: {},
       exposed: {},
-      parent,
-      provides: parent && parent.provides ? parent.provides : /* @__PURE__ */ Object.create(null)
+      parent: parent2,
+      provides: parent2 && parent2.provides ? parent2.provides : /* @__PURE__ */ Object.create(null)
     };
     return instance2;
   }
@@ -654,13 +656,13 @@ var VueRuntimeDom = (() => {
         }
       }
     }
-    function mountChildren(children, container, parent) {
+    function mountChildren(children, container, parent2) {
       for (let i = 0; i < children.length; i++) {
         const child = normalize(children, i);
-        patch(null, child, container, parent);
+        patch(null, child, container, parent2);
       }
     }
-    function mountElement(vnode, container, anchor, parent) {
+    function mountElement(vnode, container, anchor, parent2) {
       let { type, props, children, shapeFlag } = vnode;
       let el = vnode.el = hostCreateElement(type);
       if (props) {
@@ -670,13 +672,13 @@ var VueRuntimeDom = (() => {
         hostSetElementText(el, children);
       }
       if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
-        mountChildren(children, el, parent);
+        mountChildren(children, el, parent2);
       }
       hostInsert(el, container, anchor);
     }
-    function unmountChildren(children) {
+    function unmountChildren(children, parent2) {
       children.forEach((child) => {
-        unmount(child);
+        unmount(child, parent2);
       });
     }
     function patchKeyChildren(c1, c2, el) {
@@ -716,7 +718,7 @@ var VueRuntimeDom = (() => {
       } else if (i > e2) {
         if (i <= e1) {
           while (i <= e1) {
-            unmount(c1[i]);
+            unmount(c1[i], parent);
             i++;
           }
         }
@@ -734,7 +736,7 @@ var VueRuntimeDom = (() => {
           const oldVNode = c1[i2];
           const newIndex = keyToNewIndexMap.get(oldVNode.key);
           if (newIndex == null) {
-            unmount(oldVNode);
+            unmount(oldVNode, parent);
           } else {
             seq[newIndex - s2] = i2 + 1;
             patch(oldVNode, c2[newIndex], el);
@@ -758,14 +760,14 @@ var VueRuntimeDom = (() => {
         }
       }
     }
-    function patchChildren(n1, n2, el, parent) {
+    function patchChildren(n1, n2, el, parent2) {
       const c1 = n1.children;
       const c2 = n2.children;
       const prevShapeFlag = n1.shapeFlag;
       const shapeFlag = n2.shapeFlag;
       if (shapeFlag & 8 /* TEXT_CHILDREN */) {
         if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
-          unmountChildren(c1);
+          unmountChildren(c1, parent2);
         }
         if (c1 !== c2) {
           hostSetElementText(el, c2);
@@ -776,30 +778,30 @@ var VueRuntimeDom = (() => {
             patchKeyChildren(c1, c2, el);
           } else {
             console.log(c1);
-            unmountChildren(c1);
+            unmountChildren(c1, parent2);
           }
         } else {
           if (prevShapeFlag & 8 /* TEXT_CHILDREN */) {
             hostSetElementText(el, "");
           }
           if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
-            mountChildren(c2, el, parent);
+            mountChildren(c2, el, parent2);
           }
         }
       }
     }
-    function patchElement(n1, n2, parent) {
+    function patchElement(n1, n2, parent2) {
       const el = n2.el = n1.el;
       const oldProps = n1.props;
       const newProps = n2.props;
       patchProps(oldProps, newProps, el);
-      patchChildren(n1, n2, el, parent);
+      patchChildren(n1, n2, el, parent2);
     }
-    function processElement(n1, n2, container, anchor, parent) {
+    function processElement(n1, n2, container, anchor, parent2) {
       if (n1 == null) {
-        mountElement(n2, container, anchor, parent);
+        mountElement(n2, container, anchor, parent2);
       } else {
-        patchElement(n1, n2, parent);
+        patchElement(n1, n2, parent2);
       }
     }
     function processText(n1, n2, container) {
@@ -813,9 +815,9 @@ var VueRuntimeDom = (() => {
         }
       }
     }
-    function processFragment(n1, n2, container, parent) {
+    function processFragment(n1, n2, container, parent2) {
       if (n1 == null) {
-        mountChildren(n2.children, container, parent);
+        mountChildren(n2.children, container, parent2);
       } else {
         patchKeyChildren(n1.children, n2.children, container);
       }
@@ -824,6 +826,7 @@ var VueRuntimeDom = (() => {
       instance2.next = null;
       instance2.vnode = next;
       updateProps(instance2, instance2.props, next.props);
+      Object.assign(instance2.slots, next.children);
     }
     function setupRenderEffect(instance2, container, anchor) {
       const componentUpdate = () => {
@@ -857,8 +860,15 @@ var VueRuntimeDom = (() => {
       const update = instance2.update = effect2.run.bind(effect2);
       update();
     }
-    function mountComponent(vnode, container, anchor, parent) {
-      const instance2 = vnode.component = createComponentInstance(vnode, parent);
+    function mountComponent(vnode, container, anchor, parent2) {
+      const instance2 = vnode.component = createComponentInstance(vnode, parent2);
+      instance2.ctx.renderer = {
+        createElement: hostCreateElement,
+        move(vnode2, container2) {
+          hostInsert(vnode2.component.subTree.el, container2);
+        },
+        unmount
+      };
       setupComponent(instance2);
       setupRenderEffect(instance2, container, anchor);
     }
@@ -882,7 +892,13 @@ var VueRuntimeDom = (() => {
     function shouldComponentUpdate(n1, n2) {
       const prevProps = n1.props;
       const nextProps = n2.props;
-      return hasChange(prevProps, nextProps);
+      if (hasChange(prevProps, nextProps)) {
+        return true;
+      }
+      if (n1.children || n2.children) {
+        return true;
+      }
+      return false;
     }
     function updateComponent(n1, n2) {
       const instance2 = n2.component = n1.component;
@@ -893,25 +909,33 @@ var VueRuntimeDom = (() => {
         instance2.next = n2;
       }
     }
-    function processComponent(n1, n2, container, anchor, parent) {
+    function processComponent(n1, n2, container, anchor, parent2) {
       if (n1 == null) {
-        mountComponent(n2, container, anchor, parent);
+        if (n2.shapeFlag & 512 /* COMPONENT_KEEP_ALIVE */) {
+          console.log("norener ");
+          parent2.ctx.active(n2, container, anchor);
+        } else {
+          mountComponent(n2, container, anchor, parent2);
+        }
       } else {
         updateComponent(n1, n2);
       }
     }
-    function unmount(n1) {
+    function unmount(n1, parent2) {
       let { shapeFlag, component } = n1;
+      if (shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */) {
+        parent2.ctx.deactivated(n1);
+      }
       if (n1.type === Fragment) {
-        return unmountChildren(n1.children);
+        return unmountChildren(n1.children, parent2);
       } else if (shapeFlag & 6 /* COMPONENT */) {
-        return unmount(component.subTree);
+        return unmount(component.subTree, parent2);
       }
       hostRemove(n1.el);
     }
-    function patch(n1, n2, container, anchor = null, parent = null) {
+    function patch(n1, n2, container, anchor = null, parent2 = null) {
       if (n1 && !isSameVNode(n1, n2)) {
-        unmount(n1);
+        unmount(n1, parent2);
         n1 = null;
       }
       const { type, shapeFlag } = n2;
@@ -920,13 +944,13 @@ var VueRuntimeDom = (() => {
           processText(n1, n2, container);
           break;
         case Fragment:
-          processFragment(n1, n2, container, parent);
+          processFragment(n1, n2, container, parent2);
           break;
         default:
           if (shapeFlag & 1 /* ELEMENT */) {
-            processElement(n1, n2, container, anchor, parent);
+            processElement(n1, n2, container, anchor, parent2);
           } else if (shapeFlag & 4 /* STATEFUL_COMPONENT */) {
-            processComponent(n1, n2, container, anchor, parent);
+            processComponent(n1, n2, container, anchor, parent2);
           }
           break;
       }
@@ -935,7 +959,7 @@ var VueRuntimeDom = (() => {
       if (vnode == null) {
         console.log("xx");
         if (container._vnode) {
-          unmount(container._vnode);
+          unmount(container._vnode, null);
         }
       } else {
         patch(container._vnode || null, vnode, container);
@@ -969,7 +993,7 @@ var VueRuntimeDom = (() => {
   }
   var onBeforeMount = createInvoker("bm" /* BEFORE_MOUNT */);
   var onMounted = createInvoker("m" /* MOUNTED */);
-  var onUPdated = createInvoker("u" /* UPDATED */);
+  var onUpdated = createInvoker("u" /* UPDATED */);
 
   // packages/runtime-core/src/apiInject.ts
   function provide(key, value) {
@@ -1004,7 +1028,7 @@ var VueRuntimeDom = (() => {
     let Component = null;
     return {
       setup() {
-        const { loader, timeout, errorComponent, delay, loadingComponent } = loaderOrOptions;
+        const { loader, timeout, errorComponent, delay, loadingComponent, onError } = loaderOrOptions;
         const loaded = ref(false);
         const error = ref(false);
         const loading = ref(false);
@@ -1013,20 +1037,40 @@ var VueRuntimeDom = (() => {
             error.value = true;
           }, timeout);
         }
+        let timer;
         if (delay) {
-          setTimeout(() => {
+          timer = setTimeout(() => {
             loading.value = true;
           }, delay);
         } else {
           loading.value = true;
         }
-        loader().then((component) => {
+        let retryCount = 1;
+        function load() {
+          return loader().catch((err) => {
+            if (onError) {
+              return new Promise((resolve, reject) => {
+                const retry = () => {
+                  retryCount++;
+                  resolve(load());
+                };
+                const fail = () => reject();
+                onError(err, retry, fail, retryCount);
+              });
+            } else {
+              throw err;
+            }
+          });
+        }
+        load().then((component) => {
           loaded.value = true;
           Component = component;
         }).catch((err) => {
           error.value = true;
         }).finally(() => {
           loading.value = false;
+          clearTimeout(timer);
+          timer = null;
         });
         return () => {
           if (loaded.value) {
@@ -1042,6 +1086,70 @@ var VueRuntimeDom = (() => {
     };
   }
 
+  // packages/runtime-core/src/keepAlive.ts
+  function resetFlag(vnode) {
+    if (vnode.shapeFlag & 512 /* COMPONENT_KEEP_ALIVE */) {
+      vnode.shapeFlag -= 512 /* COMPONENT_KEEP_ALIVE */;
+    }
+    if (vnode.shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */) {
+      vnode.shapeFlag -= 256 /* COMPONENT_SHOULD_KEEP_ALIVE */;
+    }
+  }
+  var KeepAlive = {
+    props: {
+      max: [String, Number]
+    },
+    __isKeepAlive: true,
+    setup(props, { slots }) {
+      const instance2 = getCurrentInstance();
+      const { createElement, move, unmount } = instance2.ctx.renderer;
+      let storageContainer = createElement("div");
+      const keys = /* @__PURE__ */ new Set();
+      const cache = /* @__PURE__ */ new Map();
+      const pruneCacheEntry = (vnode) => {
+        const subTree = cache.get(vnode);
+        resetFlag(subTree);
+        unmount(subTree);
+        cache.delete(vnode);
+        keys.delete(vnode);
+      };
+      instance2.ctx.active = (n2, container, anchor) => {
+        move(n2, container, anchor);
+      };
+      instance2.ctx.deactivated = (n1) => {
+        move(n1, storageContainer);
+      };
+      let pendingCacheKey = null;
+      const cacheSubTree = () => {
+        cache.set(pendingCacheKey, instance2.subTree);
+      };
+      onMounted(cacheSubTree);
+      onUpdated(cacheSubTree);
+      return () => {
+        let vnode = slots.default();
+        if (!(vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */))
+          return vnode;
+        let comp = vnode.type;
+        const key = vnode.key == null ? comp : vnode.key;
+        pendingCacheKey = key;
+        let cacheVnode = cache.get(key);
+        if (cacheVnode) {
+          vnode.component = cacheVnode.component;
+          vnode.shapeFlag |= 512 /* COMPONENT_KEEP_ALIVE */;
+        } else {
+          keys.add(key);
+          const { max } = props;
+          if (keys.size > max && max) {
+            const v = keys.values().next().value;
+            pruneCacheEntry(v);
+          }
+        }
+        vnode.shapeFlag |= 256 /* COMPONENT_SHOULD_KEEP_ALIVE */;
+        return vnode;
+      };
+    }
+  };
+
   // packages/runtime-dom/src/nodeOps.ts
   var nodeOps = {
     createElement(tagName) {
@@ -1054,9 +1162,9 @@ var VueRuntimeDom = (() => {
       container.insertBefore(el, anchor);
     },
     remove(child) {
-      const parent = child.parentNode;
-      if (parent) {
-        parent.removeChild(child);
+      const parent2 = child.parentNode;
+      if (parent2) {
+        parent2.removeChild(child);
       }
     },
     querySelector(selectors) {

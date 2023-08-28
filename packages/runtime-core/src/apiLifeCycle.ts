@@ -25,4 +25,4 @@ function createInvoker(type) {
 
 export const onBeforeMount = createInvoker(LifeCycle.BEFORE_MOUNT)
 export const onMounted = createInvoker(LifeCycle.MOUNTED)
-export const onUPdated = createInvoker(LifeCycle.UPDATED)
+export const onUpdated = createInvoker(LifeCycle.UPDATED)

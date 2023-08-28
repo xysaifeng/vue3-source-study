@@ -17,3 +17,5 @@ export * from './apiInject'
 
 export * from './defineAsyncComponent'
 
+export * from './keepAlive'
+
