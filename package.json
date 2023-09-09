@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev2": "node scripts/dev.js reactivity -f global",
-    "dev": "node scripts/dev.js runtime-dom"
+    "dev3": "node scripts/dev.js runtime-dom",
+    "dev": "node scripts/dev.js reactivity"
   },
   "keywords": [],
   "author": "",

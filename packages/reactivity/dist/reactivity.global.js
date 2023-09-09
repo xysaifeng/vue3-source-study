@@ -22,6 +22,7 @@ var VueReactivity = (() => {
   __export(src_exports, {
     computed: () => computed,
     effect: () => effect,
+    effectScope: () => effectScope,
     proxyRefs: () => proxyRefs,
     reactive: () => reactive,
     ref: () => ref,
@@ -29,6 +30,50 @@ var VueReactivity = (() => {
     toRefs: () => toRefs,
     watch: () => watch
   });
+
+  // packages/reactivity/src/effectScope.ts
+  var activeEffectScope;
+  function recordEffectScope(effect2) {
+    if (activeEffectScope && activeEffectScope.active) {
+      activeEffectScope.effects.push(effect2);
+    }
+  }
+  var EffectScope = class {
+    constructor(detached) {
+      this.effects = [];
+      this.parent = null;
+      this.active = true;
+      this.scopes = [];
+      if (!detached && activeEffectScope) {
+        activeEffectScope.scopes.push(this);
+      }
+    }
+    run(fn) {
+      if (this.active) {
+        try {
+          this.parent = activeEffectScope;
+          activeEffectScope = this;
+          return fn();
+        } finally {
+          activeEffectScope = this.parent;
+          this.parent = null;
+        }
+      }
+    }
+    stop() {
+      if (this.active) {
+        this.active = false;
+        this.effects.forEach((effect2) => effect2.stop());
+      }
+      if (this.scopes.length) {
+        this.scopes.forEach((scopeEffect) => scopeEffect.stop());
+      }
+    }
+  };
+  function effectScope(detached) {
+    debugger;
+    return new EffectScope(detached);
+  }
 
   // packages/reactivity/src/effect.ts
   var activeEffect = void 0;
@@ -46,6 +91,7 @@ var VueReactivity = (() => {
       this.active = true;
       this.parent = null;
       this.deps = [];
+      recordEffectScope(this);
     }
     run() {
       if (!this.active) {
@@ -106,7 +152,7 @@ var VueReactivity = (() => {
   }
   function trackEffects(deps) {
     let shouldTrack = !deps.has(activeEffect);
-    if (shouldTrack) {
+    if (shouldTrack && activeEffect) {
       deps.add(activeEffect);
       activeEffect.deps.push(deps);
     }
@@ -126,6 +172,7 @@ var VueReactivity = (() => {
   var isFunction = (value) => {
     return typeof value === "function";
   };
+  var isArray = Array.isArray;
 
   // packages/reactivity/src/baseHandler.ts
   function isReactive(value) {
@@ -273,7 +320,6 @@ var VueReactivity = (() => {
     return new Proxy(object, {
       get(target, key, receiver) {
         const r = Reflect.get(target, key, receiver);
-        console.log("r: ", r);
         return r.__v_isRef ? r.value : r;
       },
       set(target, key, value, receiver) {
@@ -290,7 +336,6 @@ var VueReactivity = (() => {
     for (let key in object) {
       res[key] = toRef(object, key);
     }
-    console.log(res);
     return res;
   }
   function toReactive(value) {

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="app2"></div>
+  <!-- 使用自己的reactivity -->
+  <script src="./reactivity.global.js"></script>
+  <!-- 使用官方的reactivity -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+
+  <script>
+    const { effect, effectScope, reactive, computed, watch, ref, toRef, toRefs, proxyRefs } = VueReactivity
+
+    // effectScope的作用：
+    // 使用pinia，在组件卸载的时候，想停止所有依赖关系
+
+    const scope = effectScope() // 思路： 产生一个作用域 去收集effect
+
+    scope.run(() => {
+      const state = reactive({
+        count: 1
+      })
+
+      let runner = effect(() => {
+        app.innerHTML = state.count
+      })
+      setTimeout(() => {
+        // runner.effect.stop()
+      }, 3001)
+      setInterval(() => {
+        state.count++
+      }, 1000);
+
+
+      const innerScope = effectScope(true) // 类似独立进程不受外界干扰
+      innerScope.run(() => {
+        const state = reactive({
+          count: 5
+        })
+        effect(() => {
+          app2.innerHTML = state.count
+        })
+        setInterval(() => {
+          state.count++
+        }, 1000);
+      })
+    })
+    // scope.run(() => {
+    //   const state = reactive({
+    //     count: 5
+    //   })
+    //   effect(() => {
+    //     app2.innerHTML = state.count
+    //   })
+    //   setInterval(() => {
+    //     state.count++
+    //   }, 1000);
+    // })
+
+    setTimeout(() => {
+      scope.stop()
+    }, 2001)
+
+
+
+
+  </script>
+
+</body>
+
+</html>

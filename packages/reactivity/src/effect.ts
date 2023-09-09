@@ -1,3 +1,4 @@
+import { recordEffectScope } from "./effectScope"
 
 export let activeEffect = undefined
 
@@ -27,6 +28,8 @@ export class ReactiveEffect {
   public deps = [] // effect存储属性，存的是属性对应的effect
 
   constructor(public fn, public scheduler?) { // public fn : 会把fn放到this上面
+    // add on 20230905 23:20 让effectScope记住每一个effect
+    recordEffectScope(this)
   }
   run() {
     // 如果是非激活的，不需要进行依赖收集
